@@ -1,7 +1,7 @@
 import subprocess
 import psutil
 import platform
-import sys
+import winreg
 
 
 """Get functions to retrieve info about OS, installed software/applications, and system services"""
@@ -15,35 +15,30 @@ def get_OS_version():
     return os_version
 
 def get_installed_programs_windows():
-    if sys.platform == "win32":
-        import winreg
-        installed_programs = []
-        uninstall_key = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
+    installed_programs = []
+    uninstall_key = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
 
-        try:
-            reg_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, uninstall_key)
-            for i in range(winreg.QueryInfoKey(reg_key)[0]):
+    try:
+        reg_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, uninstall_key)
+        for i in range(winreg.QueryInfoKey(reg_key)[0]):
+            try:
+                subkey_name = winreg.EnumKey(reg_key, i)
+                subkey = winreg.OpenKey(reg_key, subkey_name)
+                display_name = winreg.QueryValueEx(subkey, "DisplayName")[0]
                 try:
-                    subkey_name = winreg.EnumKey(reg_key, i)
-                    subkey = winreg.OpenKey(reg_key, subkey_name)
-                    display_name = winreg.QueryValueEx(subkey, "DisplayName")[0]
-                    try:
-                        display_version = winreg.QueryValueEx(subkey, "DisplayVersion")[0]
-                    except FileNotFoundError:
-                        display_version = "Version not found"
+                    display_version = winreg.QueryValueEx(subkey, "DisplayVersion")[0]
+                except FileNotFoundError:
+                    display_version = "Version not found"
 
-                    installed_programs.append((display_name, display_version))
-                except Exception as e:
-                    continue
-            winreg.CloseKey(reg_key)
-        except FileNotFoundError:
-            print("No programs found in the registry.")
+                installed_programs.append((display_name, display_version))
+            except Exception as e:
+                continue
+        winreg.CloseKey(reg_key)
+    except FileNotFoundError:
+        print("No programs found in the registry.")
 
-        return installed_programs
-    else:
-        # Handle alternative functionality for Linux or macOS
-        print("winreg is only available on Windows.")
-  
+    return installed_programs
+
 # Function to get the version of the service. This will be used in get_system_services_windows() because psutil has no function to provide version *doesnt work*
 def get_service_version(service_name):
     try:
@@ -95,7 +90,7 @@ def print_system_services():
 
 if __name__ == "__main__":
     print_OS_info()
-    #print_installed_programs()
-    #print_system_services()
+    print_installed_programs()
+    print_system_services()
 
 
