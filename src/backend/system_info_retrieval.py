@@ -2,6 +2,7 @@ import subprocess
 import psutil
 import platform
 import winreg
+import json
 
 
 """Get functions to retrieve info about OS, installed software/applications, and system services"""
@@ -88,9 +89,24 @@ def print_system_services():
         print(f"{name} - {version} - {status}")
 
 
+def build_json():
+    programs = []
+    for name, version in get_installed_programs_windows():
+        programs.append({"name": name, "version": version})
+
+    with open('sysinfo.json', "w", encoding="utf-8") as file:
+        json.dump({"programs": programs}, file, indent=4)
+
+
 if __name__ == "__main__":
     print_OS_info()
-    print_installed_programs()
-    print_system_services()
+    build_json()
+    with open('sysinfo.json', "r", encoding="utf-8") as file:
+        data = json.load(file)
+
+    for program in data.get("programs", []):
+        print(f"Name: {program['name']}, Version: {program['version']}")
+    #print_installed_programs()
+    #print_system_services()
 
 
