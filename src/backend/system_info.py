@@ -1,11 +1,7 @@
 import subprocess
 import psutil
 import platform
-import winreg
-import json
-
-
-"""Get functions to retrieve info about OS, installed software/applications, and system services"""
+import sys
 
 def get_OS_platform():
     os_name = platform.system()
@@ -15,10 +11,20 @@ def get_OS_version():
     os_version = platform.version()
     return os_version
 
+def get_installed_programs():
+    # This function now checks if the OS is Windows or Linux
+    if sys.platform == "win32":
+        return get_installed_programs_windows()
+    elif sys.platform == "linux" or sys.platform == "linux2":
+        return "Installed programs listing is not available on Linux."
+    else:
+        return "Installed programs listing is only available on Windows."
+
 def get_installed_programs_windows():
+    # This is the Windows-specific function to list installed programs
+    import winreg
     installed_programs = []
     uninstall_key = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
-
     try:
         reg_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, uninstall_key)
         for i in range(winreg.QueryInfoKey(reg_key)[0]):
@@ -30,18 +36,16 @@ def get_installed_programs_windows():
                     display_version = winreg.QueryValueEx(subkey, "DisplayVersion")[0]
                 except FileNotFoundError:
                     display_version = "Version not found"
-
                 installed_programs.append((display_name, display_version))
             except Exception as e:
                 continue
         winreg.CloseKey(reg_key)
     except FileNotFoundError:
         print("No programs found in the registry.")
-
     return installed_programs
 
-# Function to get the version of the service. This will be used in get_system_services_windows() because psutil has no function to provide version *doesnt work*
 def get_service_version(service_name):
+    # Windows-specific command to get service version info
     try:
         command = f"wmic service where the name='{service_name}' get version"
         result = subprocess.run(command, capture_output=True, text=True, shell=True)
@@ -50,63 +54,24 @@ def get_service_version(service_name):
     except Exception as e:
         return f"Error obtaining version: {str(e)}"
 
-# (Windows - psutil)
+def get_system_services():
+    # This function now checks if the OS is Windows or Linux
+    if platform.system() == "Windows":
+        return get_system_services_windows()
+    elif platform.system() == "Linux":
+        return "Service iteration is only available on Windows. Current OS: Linux."
+    else:
+        return f"Service iteration is only available on Windows. Current OS: {platform.system()}"
+
 def get_system_services_windows():
+    # This function is Windows-specific, using psutil to get services
     services = []
     for service in psutil.win_service_iter():
         try:
             service_name = service.name()
             service_status = service.status()
-
-            # Get version using the WMIC function
             service_version = get_service_version(service_name)
-
             services.append((service_name, service_status, service_version))
         except Exception as e:
             continue
     return services
-
-""" Display data from the get functions"""
-
-def print_OS_info():
-    operating_system = get_OS_platform()
-    operating_system_version = get_OS_version()
-    print(f"Operating System: {operating_system}, version: {operating_system_version}")
-
-def print_installed_programs():
-    programs = get_installed_programs_windows()
-
-    print("Installed Programs:")
-    for name, version in programs:
-        print(f"{name} - {version}")
-
-#  *version scraper doesnt work
-def print_system_services():
-    services = get_system_services_windows()
-
-    print("\nSystem Services:")
-    for name, version, status in services:
-        print(f"{name} - {version} - {status}")
-
-
-def build_json():
-    programs = []
-    for name, version in get_installed_programs_windows():
-        programs.append({"name": name, "version": version})
-
-    with open('sysinfo.json', "w", encoding="utf-8") as file:
-        json.dump({"programs": programs}, file, indent=4)
-
-
-if __name__ == "__main__":
-    print_OS_info()
-    build_json()
-    with open('sysinfo.json', "r", encoding="utf-8") as file:
-        data = json.load(file)
-
-    for program in data.get("programs", []):
-        print(f"Name: {program['name']}, Version: {program['version']}")
-    #print_installed_programs()
-    #print_system_services()
-
-
