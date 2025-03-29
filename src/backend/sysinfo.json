@@ -1,0 +1,1952 @@
+{
+    "programs": [
+        {
+            "name": "Windows Driver Package - Google, Inc. (WinUSB) AndroidUsbDeviceClass  (08/28/2014 11.0.0000.00000)",
+            "version": "08/28/2014 11.0.0000.00000"
+        },
+        {
+            "name": "StarUML 6.0.1",
+            "version": "6.0.1"
+        },
+        {
+            "name": "Vortex",
+            "version": "1.4.17"
+        },
+        {
+            "name": "FreeTube 0.13.2",
+            "version": "0.13.2"
+        },
+        {
+            "name": "Surge XT",
+            "version": "1.2.3"
+        },
+        {
+            "name": "7-Zip 16.04 (x64)",
+            "version": "16.04"
+        },
+        {
+            "name": "7th Heaven",
+            "version": "Version not found"
+        },
+        {
+            "name": "AMD Software",
+            "version": "19.10.16"
+        },
+        {
+            "name": "ARIA Engine v1.9.6.1",
+            "version": "v1.9.6.1"
+        },
+        {
+            "name": "AutoHotkey 1.1.36.02",
+            "version": "1.1.36.02"
+        },
+        {
+            "name": "Beyond Compare 5.0.3",
+            "version": "5.0.3.30258"
+        },
+        {
+            "name": "BlueStacks App Player",
+            "version": "5.21.205.1001"
+        },
+        {
+            "name": "Cheat Engine 7.2",
+            "version": "Version not found"
+        },
+        {
+            "name": "Cisco Packet Tracer 8.2.1 64Bit",
+            "version": "8.2.1.118"
+        },
+        {
+            "name": "Cocaine Diesel",
+            "version": "0.1.0.53"
+        },
+        {
+            "name": "TroubleDays",
+            "version": "Version not found"
+        },
+        {
+            "name": "DCS World",
+            "version": "2"
+        },
+        {
+            "name": "Docker Desktop",
+            "version": "4.36.0"
+        },
+        {
+            "name": "EaseUS TodoPhoto Recovery",
+            "version": "Version not found"
+        },
+        {
+            "name": "Equalizer APO",
+            "version": "1.2"
+        },
+        {
+            "name": "FabFilter Total Bundle",
+            "version": "2022.02.15"
+        },
+        {
+            "name": "FabFilter TotalBundle VST v1.0",
+            "version": "Version not found"
+        },
+        {
+            "name": "FastRawViewer x64 2.0.9.2038",
+            "version": "2.0.9.2038"
+        },
+        {
+            "name": "FIFA 17",
+            "version": "1.0.0.0"
+        },
+        {
+            "name": "FileZilla Server 1.9.4",
+            "version": "1.9.4"
+        },
+        {
+            "name": "FlightGear v2020.3.18",
+            "version": "2020.3.18"
+        },
+        {
+            "name": "Git version 2.31.1",
+            "version": "2.31.1"
+        },
+        {
+            "name": "HxD Hex Editor 2.5",
+            "version": "2.5"
+        },
+        {
+            "name": "Jamulus",
+            "version": "3.9.1"
+        },
+        {
+            "name": "MIDI Control Center 1.13.6",
+            "version": "1.13.6"
+        },
+        {
+            "name": "Monero GUI Wallet version 0.17.1.9",
+            "version": "0.17.1.9"
+        },
+        {
+            "name": "Mozilla Firefox (x64 en-US)",
+            "version": "133.0.3"
+        },
+        {
+            "name": "Mozilla Maintenance Service",
+            "version": "133.0.3"
+        },
+        {
+            "name": "Notepad++ (64-bit x64)",
+            "version": "7.6.2"
+        },
+        {
+            "name": "Novation USB Audio Driver 2.13",
+            "version": "2.13"
+        },
+        {
+            "name": "Novation USB Midi 2.26.2.61",
+            "version": "2.26.2.61"
+        },
+        {
+            "name": "Pale Moon 28.15.0 (x64 en-US)",
+            "version": "28.15.0"
+        },
+        {
+            "name": "Parsec Virtual Display Driver",
+            "version": "0.45.0.0"
+        },
+        {
+            "name": "Process Hacker 2.39 (r124)",
+            "version": "2.39.0.124"
+        },
+        {
+            "name": "Project Reality: BF2",
+            "version": "v1.6"
+        },
+        {
+            "name": "Recuva",
+            "version": "1.53"
+        },
+        {
+            "name": "Sandboxie-Plus v1.9.8",
+            "version": "1.9.8"
+        },
+        {
+            "name": "SonoBus version 1.4.6",
+            "version": "1.4.6"
+        },
+        {
+            "name": "Reveal Sound Spire",
+            "version": "1.1.17.4178"
+        },
+        {
+            "name": "Counter-Strike",
+            "version": "Version not found"
+        },
+        {
+            "name": "Call of Duty: World at War",
+            "version": "Version not found"
+        },
+        {
+            "name": "One Synth",
+            "version": "Version not found"
+        },
+        {
+            "name": "Call of Duty: Modern Warfare 2 - Multiplayer",
+            "version": "Version not found"
+        },
+        {
+            "name": "Ultra Fight Da Kyanta 2",
+            "version": "Version not found"
+        },
+        {
+            "name": "Terraria",
+            "version": "Version not found"
+        },
+        {
+            "name": "Battle Grounds III",
+            "version": "Version not found"
+        },
+        {
+            "name": "Main Assembly",
+            "version": "Version not found"
+        },
+        {
+            "name": "Online Simulator",
+            "version": "Version not found"
+        },
+        {
+            "name": "The Backrooms Game FREE Edition",
+            "version": "Version not found"
+        },
+        {
+            "name": "RetroArch",
+            "version": "Version not found"
+        },
+        {
+            "name": "Sinking Simulator",
+            "version": "Version not found"
+        },
+        {
+            "name": "Apex Legends",
+            "version": "Version not found"
+        },
+        {
+            "name": "Sea of Thieves",
+            "version": "Version not found"
+        },
+        {
+            "name": "Star Fetchers",
+            "version": "Version not found"
+        },
+        {
+            "name": "Mainframe Defenders",
+            "version": "Version not found"
+        },
+        {
+            "name": "Trepang2 Demo",
+            "version": "Version not found"
+        },
+        {
+            "name": "Need for Speed\u2122 Heat ",
+            "version": "Version not found"
+        },
+        {
+            "name": "Titanfall\u00ae 2",
+            "version": "Version not found"
+        },
+        {
+            "name": "Battlefield 1 \u2122",
+            "version": "Version not found"
+        },
+        {
+            "name": "Halo Infinite",
+            "version": "Version not found"
+        },
+        {
+            "name": "ELDEN RING",
+            "version": "Version not found"
+        },
+        {
+            "name": "Bloons Monkey City",
+            "version": "Version not found"
+        },
+        {
+            "name": "Ninja Kiwi Archive",
+            "version": "Version not found"
+        },
+        {
+            "name": "Bloons TD Battles 2",
+            "version": "Version not found"
+        },
+        {
+            "name": "tModLoader",
+            "version": "Version not found"
+        },
+        {
+            "name": "Pull Stay Demo",
+            "version": "Version not found"
+        },
+        {
+            "name": "Half-Life: Blue Shift",
+            "version": "Version not found"
+        },
+        {
+            "name": "Gloomwood Demo",
+            "version": "Version not found"
+        },
+        {
+            "name": "Golden Axed: A Cancelled Prototype",
+            "version": "Version not found"
+        },
+        {
+            "name": "Cruelty Squad",
+            "version": "Version not found"
+        },
+        {
+            "name": "Krunker",
+            "version": "Version not found"
+        },
+        {
+            "name": "Deadlock",
+            "version": "Version not found"
+        },
+        {
+            "name": "Leaf Blower Revolution - Idle Game",
+            "version": "Version not found"
+        },
+        {
+            "name": "DEFCON Demo",
+            "version": "Version not found"
+        },
+        {
+            "name": "Gorilla Tag",
+            "version": "Version not found"
+        },
+        {
+            "name": "Isonzo",
+            "version": "Version not found"
+        },
+        {
+            "name": "Mission in Snowdriftland - Snowlogue",
+            "version": "Version not found"
+        },
+        {
+            "name": "Entropy : Zero 2",
+            "version": "Version not found"
+        },
+        {
+            "name": "Mainframe Defenders: Meltdown - Prologue",
+            "version": "Version not found"
+        },
+        {
+            "name": "MY HERO ULTRA RUMBLE",
+            "version": "Version not found"
+        },
+        {
+            "name": "Muck",
+            "version": "Version not found"
+        },
+        {
+            "name": "Peripeteia Demo",
+            "version": "Version not found"
+        },
+        {
+            "name": "Trapper: Drug Dealing RPG",
+            "version": "Version not found"
+        },
+        {
+            "name": "DELTARUNE (Chapter 1 & 2 DEMO)",
+            "version": "Version not found"
+        },
+        {
+            "name": "Halo: Reach Mod Tools - MCC",
+            "version": "Version not found"
+        },
+        {
+            "name": "HYPER DEMON",
+            "version": "Version not found"
+        },
+        {
+            "name": "Synergy",
+            "version": "Version not found"
+        },
+        {
+            "name": "Dystopia",
+            "version": "Version not found"
+        },
+        {
+            "name": "Babble Royale",
+            "version": "Version not found"
+        },
+        {
+            "name": "Half-Life: MMod",
+            "version": "Version not found"
+        },
+        {
+            "name": "DRAGON BALL: Sparking! ZERO",
+            "version": "Version not found"
+        },
+        {
+            "name": "Bitburner",
+            "version": "Version not found"
+        },
+        {
+            "name": "MultiVersus",
+            "version": "Version not found"
+        },
+        {
+            "name": "Ruins Of Mitriom",
+            "version": "Version not found"
+        },
+        {
+            "name": "Tyrone vs Cops",
+            "version": "Version not found"
+        },
+        {
+            "name": "How Fish Is Made",
+            "version": "Version not found"
+        },
+        {
+            "name": "Wolfenstein: Enemy Territory",
+            "version": "Version not found"
+        },
+        {
+            "name": "Aperture Desk Job",
+            "version": "Version not found"
+        },
+        {
+            "name": "Turbo Overkill Demo",
+            "version": "Version not found"
+        },
+        {
+            "name": "Selaco Demo",
+            "version": "Version not found"
+        },
+        {
+            "name": "Lethal Company",
+            "version": "Version not found"
+        },
+        {
+            "name": "AQtion",
+            "version": "Version not found"
+        },
+        {
+            "name": "The Looker",
+            "version": "Version not found"
+        },
+        {
+            "name": "The Way of the Badass",
+            "version": "Version not found"
+        },
+        {
+            "name": "Team Fortress Classic",
+            "version": "Version not found"
+        },
+        {
+            "name": "Worms Revolution",
+            "version": "Version not found"
+        },
+        {
+            "name": "Tomb Raider",
+            "version": "Version not found"
+        },
+        {
+            "name": "Castle Crashers",
+            "version": "Version not found"
+        },
+        {
+            "name": "THE FINALS",
+            "version": "Version not found"
+        },
+        {
+            "name": "Source SDK",
+            "version": "Version not found"
+        },
+        {
+            "name": "Super Crate Box",
+            "version": "Version not found"
+        },
+        {
+            "name": "Source SDK Base 2006",
+            "version": "Version not found"
+        },
+        {
+            "name": "JBMod",
+            "version": "Version not found"
+        },
+        {
+            "name": "Source SDK Base 2007",
+            "version": "Version not found"
+        },
+        {
+            "name": "PAYDAY 2",
+            "version": "Version not found"
+        },
+        {
+            "name": "Hotline Miami",
+            "version": "Version not found"
+        },
+        {
+            "name": "Half-Life 2",
+            "version": "Version not found"
+        },
+        {
+            "name": "Resident Evil 6 / Biohazard 6",
+            "version": "Version not found"
+        },
+        {
+            "name": "Insurgency",
+            "version": "Version not found"
+        },
+        {
+            "name": "POSTAL 2",
+            "version": "Version not found"
+        },
+        {
+            "name": "Cry of Fear",
+            "version": "Version not found"
+        },
+        {
+            "name": "DCS World Steam Edition",
+            "version": "Version not found"
+        },
+        {
+            "name": "Fallout: New Vegas",
+            "version": "Version not found"
+        },
+        {
+            "name": "BABBDI",
+            "version": "Version not found"
+        },
+        {
+            "name": "No More Room in Hell",
+            "version": "Version not found"
+        },
+        {
+            "name": "Brothers - A Tale of Two Sons",
+            "version": "Version not found"
+        },
+        {
+            "name": "Sven Co-op",
+            "version": "Version not found"
+        },
+        {
+            "name": "Euro Truck Simulator 2",
+            "version": "Version not found"
+        },
+        {
+            "name": "Company of Heroes 2",
+            "version": "Version not found"
+        },
+        {
+            "name": "POSTAL",
+            "version": "Version not found"
+        },
+        {
+            "name": "Far Cry\u00ae 3 Blood Dragon",
+            "version": "Version not found"
+        },
+        {
+            "name": "Balatro",
+            "version": "Version not found"
+        },
+        {
+            "name": "Deus Ex: Human Revolution - Director's Cut",
+            "version": "Version not found"
+        },
+        {
+            "name": "Shadow Warrior Classic (1997)",
+            "version": "Version not found"
+        },
+        {
+            "name": "Sniper Elite 3",
+            "version": "Version not found"
+        },
+        {
+            "name": "BattleBlock Theater",
+            "version": "Version not found"
+        },
+        {
+            "name": "Dying Light",
+            "version": "Version not found"
+        },
+        {
+            "name": "Counter-Strike: Source",
+            "version": "Version not found"
+        },
+        {
+            "name": "Source SDK Base 2013 Singleplayer",
+            "version": "Version not found"
+        },
+        {
+            "name": "Source SDK Base 2013 Multiplayer",
+            "version": "Version not found"
+        },
+        {
+            "name": "Viscera Cleanup Detail",
+            "version": "Version not found"
+        },
+        {
+            "name": "SLUDGE LIFE: The BIG MUD Sessions",
+            "version": "Version not found"
+        },
+        {
+            "name": "Bopl Battle Demo",
+            "version": "Version not found"
+        },
+        {
+            "name": "Battlefield: Bad Company\u2122 2",
+            "version": "Version not found"
+        },
+        {
+            "name": "7 Days to Die",
+            "version": "Version not found"
+        },
+        {
+            "name": "TEKKEN 8 - DEMO",
+            "version": "Version not found"
+        },
+        {
+            "name": "Eldritch",
+            "version": "Version not found"
+        },
+        {
+            "name": "Half-Life SDK",
+            "version": "Version not found"
+        },
+        {
+            "name": "Viscera Cleanup Detail: Shadow Warrior",
+            "version": "Version not found"
+        },
+        {
+            "name": "Rebuild 3: Gangs of Deadsville",
+            "version": "Version not found"
+        },
+        {
+            "name": "Hyper Light Drifter",
+            "version": "Version not found"
+        },
+        {
+            "name": "Call of Duty 2",
+            "version": "Version not found"
+        },
+        {
+            "name": "Viscera Cleanup Detail: Santa's Rampage",
+            "version": "Version not found"
+        },
+        {
+            "name": "Fistful of Frags",
+            "version": "Version not found"
+        },
+        {
+            "name": "NaissanceE",
+            "version": "Version not found"
+        },
+        {
+            "name": "Bloodthief Playtest",
+            "version": "Version not found"
+        },
+        {
+            "name": "NIGHT-RUNNERS PROLOGUE",
+            "version": "Version not found"
+        },
+        {
+            "name": "Grand Theft Auto V",
+            "version": "Version not found"
+        },
+        {
+            "name": "Hotline Miami 2: Wrong Number",
+            "version": "Version not found"
+        },
+        {
+            "name": "A Story About My Uncle",
+            "version": "Version not found"
+        },
+        {
+            "name": "Stellaris",
+            "version": "Version not found"
+        },
+        {
+            "name": "Buckshot Roulette",
+            "version": "Version not found"
+        },
+        {
+            "name": "Resident Evil Revelations 2 / Biohazard Revelations 2",
+            "version": "Version not found"
+        },
+        {
+            "name": "Brawlhalla",
+            "version": "Version not found"
+        },
+        {
+            "name": "Banana",
+            "version": "Version not found"
+        },
+        {
+            "name": "Unturned",
+            "version": "Version not found"
+        },
+        {
+            "name": "Bloons TD5",
+            "version": "Version not found"
+        },
+        {
+            "name": "Higurashi When They Cry Hou - Ch.1 Onikakushi",
+            "version": "Version not found"
+        },
+        {
+            "name": "DiRT Rally",
+            "version": "Version not found"
+        },
+        {
+            "name": "Call of Duty: Black Ops III",
+            "version": "Version not found"
+        },
+        {
+            "name": "Company of Heroes 2 Tools",
+            "version": "Version not found"
+        },
+        {
+            "name": "Falling Limbs Demo",
+            "version": "Version not found"
+        },
+        {
+            "name": "Double Action: Boogaloo",
+            "version": "Version not found"
+        },
+        {
+            "name": "Portal Stories: Mel",
+            "version": "Version not found"
+        },
+        {
+            "name": "Automaton Heart Demo",
+            "version": "Version not found"
+        },
+        {
+            "name": "Half-Life 2: Deathmatch",
+            "version": "Version not found"
+        },
+        {
+            "name": "Geometry Dash",
+            "version": "Version not found"
+        },
+        {
+            "name": "Don't Starve Together",
+            "version": "Version not found"
+        },
+        {
+            "name": "SUPERHOT",
+            "version": "Version not found"
+        },
+        {
+            "name": "Half-Life Soundtrack",
+            "version": "Version not found"
+        },
+        {
+            "name": "Half-Life 2 Soundtrack",
+            "version": "Version not found"
+        },
+        {
+            "name": "DARK SOULS\u2122 II: Scholar of the First Sin",
+            "version": "Version not found"
+        },
+        {
+            "name": "Paint the Town Red",
+            "version": "Version not found"
+        },
+        {
+            "name": "Boring Man - Online Tactical Stickman Combat",
+            "version": "Version not found"
+        },
+        {
+            "name": "Peggle Extreme",
+            "version": "Version not found"
+        },
+        {
+            "name": "Party Hard",
+            "version": "Version not found"
+        },
+        {
+            "name": "Elite Dangerous",
+            "version": "Version not found"
+        },
+        {
+            "name": "Tom Clancy's Rainbow Six Siege",
+            "version": "Version not found"
+        },
+        {
+            "name": "Garfield Kart",
+            "version": "Version not found"
+        },
+        {
+            "name": "Hollow Knight",
+            "version": "Version not found"
+        },
+        {
+            "name": "DARK SOULS\u2122 III",
+            "version": "Version not found"
+        },
+        {
+            "name": "Valley",
+            "version": "Version not found"
+        },
+        {
+            "name": "Half-Life 2: Episode One",
+            "version": "Version not found"
+        },
+        {
+            "name": "FINAL FANTASY VII",
+            "version": "Version not found"
+        },
+        {
+            "name": "Undertale",
+            "version": "Version not found"
+        },
+        {
+            "name": "Squad",
+            "version": "Version not found"
+        },
+        {
+            "name": "Hearts of Iron IV",
+            "version": "Version not found"
+        },
+        {
+            "name": "The Jackbox Party Pack 2",
+            "version": "Version not found"
+        },
+        {
+            "name": "Deathmatch Classic",
+            "version": "Version not found"
+        },
+        {
+            "name": "Portal",
+            "version": "Version not found"
+        },
+        {
+            "name": "Garry's Mod",
+            "version": "Version not found"
+        },
+        {
+            "name": "Princess Remedy in a World of Hurt",
+            "version": "Version not found"
+        },
+        {
+            "name": "Mafia",
+            "version": "Version not found"
+        },
+        {
+            "name": "Stardew Valley",
+            "version": "Version not found"
+        },
+        {
+            "name": "Half-Life 2: Episode Two",
+            "version": "Version not found"
+        },
+        {
+            "name": "OneShot",
+            "version": "Version not found"
+        },
+        {
+            "name": "Devil Daggers",
+            "version": "Version not found"
+        },
+        {
+            "name": "Call of Duty: Modern Warfare 3 - Dedicated Server",
+            "version": "Version not found"
+        },
+        {
+            "name": "Factorio",
+            "version": "Version not found"
+        },
+        {
+            "name": "Magicka",
+            "version": "Version not found"
+        },
+        {
+            "name": "Wallpaper Engine",
+            "version": "Version not found"
+        },
+        {
+            "name": "The Jackbox Party Pack 3",
+            "version": "Version not found"
+        },
+        {
+            "name": "Blood and Bacon",
+            "version": "Version not found"
+        },
+        {
+            "name": "Waltz of the Wizard",
+            "version": "Version not found"
+        },
+        {
+            "name": "VRChat",
+            "version": "Version not found"
+        },
+        {
+            "name": "Team Fortress 2",
+            "version": "Version not found"
+        },
+        {
+            "name": "This Is the Police",
+            "version": "Version not found"
+        },
+        {
+            "name": "Bloons TD Battles",
+            "version": "Version not found"
+        },
+        {
+            "name": "Wizard of Legend",
+            "version": "Version not found"
+        },
+        {
+            "name": "LostWinds",
+            "version": "Version not found"
+        },
+        {
+            "name": "Halo Wars: Definitive Edition",
+            "version": "Version not found"
+        },
+        {
+            "name": "Surviving Mars",
+            "version": "Version not found"
+        },
+        {
+            "name": "Half-Life: A Place in the West",
+            "version": "Version not found"
+        },
+        {
+            "name": "Speed Brawl",
+            "version": "Version not found"
+        },
+        {
+            "name": "UNO Demo",
+            "version": "Version not found"
+        },
+        {
+            "name": "System Shock Demo",
+            "version": "Version not found"
+        },
+        {
+            "name": "Half-Life: Opposing Force",
+            "version": "Version not found"
+        },
+        {
+            "name": "Celeste",
+            "version": "Version not found"
+        },
+        {
+            "name": "Totally Accurate Battle Simulator",
+            "version": "Version not found"
+        },
+        {
+            "name": "Oh...Sir! The Insult Simulator",
+            "version": "Version not found"
+        },
+        {
+            "name": "DUSK",
+            "version": "Version not found"
+        },
+        {
+            "name": "Dear Esther: Landmark Edition",
+            "version": "Version not found"
+        },
+        {
+            "name": "Half-Life: Alyx",
+            "version": "Version not found"
+        },
+        {
+            "name": "Left 4 Dead 2",
+            "version": "Version not found"
+        },
+        {
+            "name": "HELLDIVERS\u2122 2",
+            "version": "Version not found"
+        },
+        {
+            "name": "Pikuniku",
+            "version": "Version not found"
+        },
+        {
+            "name": "Killer Instinct",
+            "version": "Version not found"
+        },
+        {
+            "name": "Holdfast: Nations At War",
+            "version": "Version not found"
+        },
+        {
+            "name": "Into the Breach",
+            "version": "Version not found"
+        },
+        {
+            "name": "s&box",
+            "version": "Version not found"
+        },
+        {
+            "name": "Ricochet",
+            "version": "Version not found"
+        },
+        {
+            "name": "Portal: Revolution",
+            "version": "Version not found"
+        },
+        {
+            "name": "Yu-Gi-Oh! Duel Links",
+            "version": "Version not found"
+        },
+        {
+            "name": "Star Wars: Battlefront 2 (Classic, 2005)",
+            "version": "Version not found"
+        },
+        {
+            "name": "Portal 2",
+            "version": "Version not found"
+        },
+        {
+            "name": "MORDHAU",
+            "version": "Version not found"
+        },
+        {
+            "name": "Disco Elysium",
+            "version": "Version not found"
+        },
+        {
+            "name": "Tannenberg",
+            "version": "Version not found"
+        },
+        {
+            "name": "CarX Drift Racing Online",
+            "version": "Version not found"
+        },
+        {
+            "name": "Yume Nikki",
+            "version": "Version not found"
+        },
+        {
+            "name": "CS2D",
+            "version": "Version not found"
+        },
+        {
+            "name": "Stick Fight: The Game",
+            "version": "Version not found"
+        },
+        {
+            "name": "SAS: Zombie Assault 4",
+            "version": "Version not found"
+        },
+        {
+            "name": "Mothlight",
+            "version": "Version not found"
+        },
+        {
+            "name": "SUPERHOT: MIND CONTROL DELETE",
+            "version": "Version not found"
+        },
+        {
+            "name": "Deus Ex: Game of the Year Edition",
+            "version": "Version not found"
+        },
+        {
+            "name": "Half-Life",
+            "version": "Version not found"
+        },
+        {
+            "name": "Windows Mixed Reality for SteamVR ",
+            "version": "Version not found"
+        },
+        {
+            "name": "Counter-Strike 2",
+            "version": "Version not found"
+        },
+        {
+            "name": "Paunch",
+            "version": "Version not found"
+        },
+        {
+            "name": "Headsnatchers",
+            "version": "Version not found"
+        },
+        {
+            "name": "Counter-Strike: Condition Zero",
+            "version": "Version not found"
+        },
+        {
+            "name": "RUSSIA BATTLEGROUNDS",
+            "version": "Version not found"
+        },
+        {
+            "name": "STAR WARS\u2122 Episode I Racer",
+            "version": "Version not found"
+        },
+        {
+            "name": "Totally Accurate Battlegrounds",
+            "version": "Version not found"
+        },
+        {
+            "name": "OK/NORMAL",
+            "version": "Version not found"
+        },
+        {
+            "name": "Jabroni Brawl: Episode 3",
+            "version": "Version not found"
+        },
+        {
+            "name": "The Battle of Polytopia",
+            "version": "Version not found"
+        },
+        {
+            "name": "Half-Life Dedicated Server",
+            "version": "Version not found"
+        },
+        {
+            "name": "New York Flight Simulator 2001",
+            "version": "Version not found"
+        },
+        {
+            "name": "HROT Demo",
+            "version": "Version not found"
+        },
+        {
+            "name": "Halo: The Master Chief Collection",
+            "version": "Version not found"
+        },
+        {
+            "name": "SYNTHETIK: Arena",
+            "version": "Version not found"
+        },
+        {
+            "name": "Sublime Text",
+            "version": "Version not found"
+        },
+        {
+            "name": "Sylenth1 v2.21",
+            "version": "Version not found"
+        },
+        {
+            "name": "u-he Hive",
+            "version": "2.0.0.9033"
+        },
+        {
+            "name": "Viscera Cleanup Detail: alpha v0.25\r",
+            "version": "Version not found"
+        },
+        {
+            "name": "Viscera Cleanup Detail: Santas Rampage\r",
+            "version": "Version not found"
+        },
+        {
+            "name": "Unity Hub 3.6.1",
+            "version": "3.6.1"
+        },
+        {
+            "name": "VBCABLE, The Virtual Audio Cable",
+            "version": "Version not found"
+        },
+        {
+            "name": "VCV Rack",
+            "version": "1.1.6"
+        },
+        {
+            "name": "Vim 8.2 (x64)",
+            "version": "8.2.4306"
+        },
+        {
+            "name": "VLC media player",
+            "version": "3.0.8"
+        },
+        {
+            "name": "WinRAR 5.71 (64-bit)",
+            "version": "5.71.0"
+        },
+        {
+            "name": "Plogue sforzando v1.961",
+            "version": "v1.961"
+        },
+        {
+            "name": "Microsoft Visual C++ 2013 x64 Additional Runtime - 12.0.40664",
+            "version": "12.0.40664"
+        },
+        {
+            "name": "Microsoft .NET Host - 5.0.6 (x64)",
+            "version": "40.24.30020"
+        },
+        {
+            "name": "Microsoft Visual C++ 2005 Redistributable (x64)",
+            "version": "8.0.56336"
+        },
+        {
+            "name": "Microsoft Windows Desktop Runtime - 5.0.6 (x64)",
+            "version": "40.24.30021"
+        },
+        {
+            "name": "VEGAS Pro 17.0",
+            "version": "17.0.421"
+        },
+        {
+            "name": "Microsoft .NET Core 5.0 Templates 5.0.300 (x64)",
+            "version": "20.3.62965"
+        },
+        {
+            "name": "Microsoft .NET Core 3.1 Templates 3.1.409 (x64)",
+            "version": "3.1.16.015716"
+        },
+        {
+            "name": "MSVCRT Redists",
+            "version": "1.0"
+        },
+        {
+            "name": "Python 3.10.11 Add to Path (64-bit)",
+            "version": "3.10.11150.0"
+        },
+        {
+            "name": "Microsoft .NET AppHost Pack - 5.0.6 (x64)",
+            "version": "40.24.30020"
+        },
+        {
+            "name": "Python 2.7.15 (64-bit)",
+            "version": "2.7.15150"
+        },
+        {
+            "name": "Python 3.9.1 Core Interpreter (64-bit)",
+            "version": "3.9.1150.0"
+        },
+        {
+            "name": "IntelliTraceProfilerProxy",
+            "version": "15.0.18198.01"
+        },
+        {
+            "name": "Windows Subsystem for Linux",
+            "version": "2.4.13.0"
+        },
+        {
+            "name": "Microsoft Visual C++ 2010 Redistributable - x64 10.0.40219",
+            "version": "10.0.40219"
+        },
+        {
+            "name": "PuTTY release 0.76 (64-bit)",
+            "version": "0.76.0.0"
+        },
+        {
+            "name": "Microsoft .NET AppHost Pack - 5.0.6 (x64_arm64)",
+            "version": "40.24.30020"
+        },
+        {
+            "name": "DiagnosticsHub_CollectionService",
+            "version": "16.1.28901"
+        },
+        {
+            "name": "Microsoft Update Health Tools",
+            "version": "3.74.0.0"
+        },
+        {
+            "name": "Python 3.11.1 Standard Library (64-bit)",
+            "version": "3.11.1150.0"
+        },
+        {
+            "name": "7-Zip 19.00 (x64 edition)",
+            "version": "19.00.00.0"
+        },
+        {
+            "name": "Microsoft .NET Host - 6.0.21 (x64)",
+            "version": "48.87.64667"
+        },
+        {
+            "name": "Kinect for Windows Runtime v1.8",
+            "version": "1.8.0.595"
+        },
+        {
+            "name": "Python 3.9.1 Development Libraries (64-bit)",
+            "version": "3.9.1150.0"
+        },
+        {
+            "name": "icecap_collection_x64",
+            "version": "16.10.31306"
+        },
+        {
+            "name": "Microsoft .NET AppHost Pack - 5.0.6 (x64_arm)",
+            "version": "40.24.30020"
+        },
+        {
+            "name": "Autopsy",
+            "version": "4.21.0"
+        },
+        {
+            "name": "Microsoft .NET Core AppHost Pack - 3.1.15 (x64_arm)",
+            "version": "24.124.30014"
+        },
+        {
+            "name": "CMake",
+            "version": "3.20.3"
+        },
+        {
+            "name": "ASUS AURA Extension Card HAL",
+            "version": "1.0.16"
+        },
+        {
+            "name": "ROG Live Service",
+            "version": "2.1.5.0"
+        },
+        {
+            "name": "Odamex 0.9.3",
+            "version": "0.9.3"
+        },
+        {
+            "name": "Microsoft .NET Core Targeting Pack - 3.1.0 (x64)",
+            "version": "24.64.28315"
+        },
+        {
+            "name": "Malwarebytes version 4.6.6.294",
+            "version": "4.6.6.294"
+        },
+        {
+            "name": "Microsoft .NET Core Toolset 3.1.409 (x64)",
+            "version": "12.18.32100"
+        },
+        {
+            "name": "Corsair AURA DRAM Component",
+            "version": "1.0.12"
+        },
+        {
+            "name": "Microsoft Visual C++ 2012 x64 Additional Runtime - 11.0.61030",
+            "version": "11.0.61030"
+        },
+        {
+            "name": "Vegas Pro 13.0 (64-bit)",
+            "version": "13.0.373"
+        },
+        {
+            "name": "Microsoft Visual C++ 2022 X64 Minimum Runtime - 14.42.34433",
+            "version": "14.42.34433"
+        },
+        {
+            "name": "Eclipse Temurin JDK with Hotspot 17.0.4.1+1 (x64)",
+            "version": "17.0.4.101"
+        },
+        {
+            "name": "Vagrant",
+            "version": "2.4.1"
+        },
+        {
+            "name": "Microsoft Server Speech Platform Runtime (x64)",
+            "version": "11.0.7400.345"
+        },
+        {
+            "name": "Audials 2025",
+            "version": "25.1.7.0"
+        },
+        {
+            "name": "vs_devenx64vmsi",
+            "version": "17.8.34129"
+        },
+        {
+            "name": "Python 3.9.1 Tcl/Tk Support (64-bit)",
+            "version": "3.9.1150.0"
+        },
+        {
+            "name": "blender",
+            "version": "3.4.1"
+        },
+        {
+            "name": "Windows SDK for Windows Store Apps DirectX x64 Remote",
+            "version": "10.1.17134.12"
+        },
+        {
+            "name": "Python 3.9.1 Utility Scripts (64-bit)",
+            "version": "3.9.1150.0"
+        },
+        {
+            "name": "Microsoft .NET Core AppHost Pack - 3.1.15 (x64_x86)",
+            "version": "24.124.30014"
+        },
+        {
+            "name": "Microsoft Visual C++ 2008 Redistributable - x64 9.0.30729.4148",
+            "version": "9.0.30729.4148"
+        },
+        {
+            "name": "Paint.NET",
+            "version": "5.1"
+        },
+        {
+            "name": "Logitech G HUB",
+            "version": "2025.2.687008"
+        },
+        {
+            "name": "Microsoft Visual C++ 2013 x64 Minimum Runtime - 12.0.40664",
+            "version": "12.0.40664"
+        },
+        {
+            "name": "Microsoft .NET Host FX Resolver - 5.0.6 (x64)",
+            "version": "40.24.30020"
+        },
+        {
+            "name": "Native Instruments Kontakt 5",
+            "version": "5.5.0.409"
+        },
+        {
+            "name": "Bonjour",
+            "version": "3.1.0.1"
+        },
+        {
+            "name": "JackTrip",
+            "version": "1.8.0"
+        },
+        {
+            "name": "Python 3.10.11 pip Bootstrap (64-bit)",
+            "version": "3.10.11150.0"
+        },
+        {
+            "name": "Microsoft Visual Studio Team Foundation Server 2017 RC Office Integration Language Pack (x64) - ENU",
+            "version": "15.129.27701"
+        },
+        {
+            "name": "Python 3.9.1 Documentation (64-bit)",
+            "version": "3.9.1150.0"
+        },
+        {
+            "name": "Python 3.11.1 Core Interpreter (64-bit)",
+            "version": "3.11.1150.0"
+        },
+        {
+            "name": "Python 3.9.1 Standard Library (64-bit)",
+            "version": "3.9.1150.0"
+        },
+        {
+            "name": "Microsoft .NET Core Host - 3.1.15 (x64)",
+            "version": "24.124.30014"
+        },
+        {
+            "name": "nomacs - Image Lounge",
+            "version": "3.16.1709"
+        },
+        {
+            "name": "Python 3.11.1 Documentation (64-bit)",
+            "version": "3.11.1150.0"
+        },
+        {
+            "name": "vs_minshellinteropx64msi",
+            "version": "17.8.34129"
+        },
+        {
+            "name": "Microsoft Visual C++ 2008 Redistributable - x64 9.0.30729.6161",
+            "version": "9.0.30729.6161"
+        },
+        {
+            "name": "Python 3.10.11 Tcl/Tk Support (64-bit)",
+            "version": "3.10.11150.0"
+        },
+        {
+            "name": "Microsoft .NET Host FX Resolver - 7.0.7 (x64)",
+            "version": "56.31.61636"
+        },
+        {
+            "name": "Application Verifier x64 External Package",
+            "version": "10.1.17134.12"
+        },
+        {
+            "name": "Python 3.10.11 Standard Library (64-bit)",
+            "version": "3.10.11150.0"
+        },
+        {
+            "name": "Python 3.11.1 Tcl/Tk Support (64-bit)",
+            "version": "3.11.1150.0"
+        },
+        {
+            "name": "Kinect for Windows SDK v1.8",
+            "version": "1.8.0.595"
+        },
+        {
+            "name": "HitFilm Express",
+            "version": "9.0.7813.07206"
+        },
+        {
+            "name": "Python 3.10.11 Development Libraries (64-bit)",
+            "version": "3.10.11150.0"
+        },
+        {
+            "name": "Microsoft Visual C++ 2005 Redistributable (x64)",
+            "version": "8.0.50727.42"
+        },
+        {
+            "name": "MySQL Server 8.0",
+            "version": "8.0.35"
+        },
+        {
+            "name": "Microsoft Visual Studio Installer",
+            "version": "3.8.2112.61926"
+        },
+        {
+            "name": "Python 3.9.1 Executables (64-bit)",
+            "version": "3.9.1150.0"
+        },
+        {
+            "name": "Oracle VM VirtualBox 7.0.18",
+            "version": "7.0.18"
+        },
+        {
+            "name": "Microsoft Windows Desktop Targeting Pack - 3.1.0 (x64)",
+            "version": "24.64.28315"
+        },
+        {
+            "name": "Apple Application Support (64-bit)",
+            "version": "8.7"
+        },
+        {
+            "name": "vs_Graphics_Singletonx64",
+            "version": "16.10.31213"
+        },
+        {
+            "name": "iTunes",
+            "version": "12.12.9.4"
+        },
+        {
+            "name": "Microsoft .NET Host FX Resolver - 5.0.4 (x64)",
+            "version": "40.16.29816"
+        },
+        {
+            "name": "Java 8 Update 411 (64-bit)",
+            "version": "8.0.4110.9"
+        },
+        {
+            "name": "Kindle Comic Converter",
+            "version": "5.5.2"
+        },
+        {
+            "name": "Python 3.10.11 Utility Scripts (64-bit)",
+            "version": "3.10.11150.0"
+        },
+        {
+            "name": "Exterro Evidence Processing Engine 10.27",
+            "version": "10.27.0.542"
+        },
+        {
+            "name": "Microsoft ASP.NET Core 5.0.0 Targeting Pack (x64)",
+            "version": "5.0.0.20526"
+        },
+        {
+            "name": "Microsoft Windows Desktop Runtime - 6.0.16 (x64)",
+            "version": "48.67.58484"
+        },
+        {
+            "name": "Microsoft .NET Core Runtime - 3.1.15 (x64)",
+            "version": "24.124.30014"
+        },
+        {
+            "name": "Microsoft Visual C++ 2008 Redistributable - x64 9.0.30729.17",
+            "version": "9.0.30729"
+        },
+        {
+            "name": "Voicemod",
+            "version": "2.34.2.0"
+        },
+        {
+            "name": "ENE RGB HAL",
+            "version": "1.00.10"
+        },
+        {
+            "name": "Microsoft .NET Runtime - 5.0.4 (x64)",
+            "version": "40.16.29816"
+        },
+        {
+            "name": "iCloud",
+            "version": "7.21.0.23"
+        },
+        {
+            "name": "Application Verifier x64 External Package",
+            "version": "10.1.19041.685"
+        },
+        {
+            "name": "Microsoft .NET Runtime - 6.0.21 (x64)",
+            "version": "48.87.64667"
+        },
+        {
+            "name": "Microsoft System CLR Types for SQL Server 2019 CTP2.2",
+            "version": "15.0.1200.24"
+        },
+        {
+            "name": "Python 3.10.11 Documentation (64-bit)",
+            "version": "3.10.11150.0"
+        },
+        {
+            "name": "MSVCRT Redists",
+            "version": "1.0"
+        },
+        {
+            "name": "Microsoft Visual C++ 2019 X64 Debug Runtime - 14.29.30037",
+            "version": "14.29.30037"
+        },
+        {
+            "name": "Microsoft SQL Server 2016 LocalDB ",
+            "version": "13.1.4001.0"
+        },
+        {
+            "name": "CodeMeter Runtime Kit v7.60",
+            "version": "7.60.5598.500"
+        },
+        {
+            "name": "Microsoft .NET Core AppHost Pack - 3.1.15 (x64)",
+            "version": "24.124.30014"
+        },
+        {
+            "name": "VMware Workstation",
+            "version": "16.2.4"
+        },
+        {
+            "name": "Java(TM) SE Development Kit 17.0.4 (64-bit)",
+            "version": "17.0.4.0"
+        },
+        {
+            "name": "Helm",
+            "version": "0.9.0.0"
+        },
+        {
+            "name": "Python 3.11.1 Development Libraries (64-bit)",
+            "version": "3.11.1150.0"
+        },
+        {
+            "name": "Microsoft ASP.NET Core 3.1.15 Shared Framework (x64)",
+            "version": "3.1.15.21215"
+        },
+        {
+            "name": "vs_communityx64msi",
+            "version": "17.8.34205"
+        },
+        {
+            "name": "Hex Workshop v6.8",
+            "version": "6.8.0.5419"
+        },
+        {
+            "name": "VS Script Debugging Common",
+            "version": "16.0.102.0"
+        },
+        {
+            "name": "Exterro PostgreSQL",
+            "version": "14.0.0.49"
+        },
+        {
+            "name": "Microsoft .NET Standard Targeting Pack - 2.1.0 (x64)",
+            "version": "24.0.28113"
+        },
+        {
+            "name": "Python 3.11.1 Executables (64-bit)",
+            "version": "3.11.1150.0"
+        },
+        {
+            "name": "Python 3.9.1 Test Suite (64-bit)",
+            "version": "3.9.1150.0"
+        },
+        {
+            "name": "IDA Pro 7.3 version 7.3",
+            "version": "7.3"
+        },
+        {
+            "name": "Kinect for Windows Drivers v1.8",
+            "version": "1.8.0.595"
+        },
+        {
+            "name": "Star Wars Episode 1 Racer",
+            "version": "Version not found"
+        },
+        {
+            "name": "Microsoft Visual C++ 2005 Redistributable (x64)",
+            "version": "8.0.61186"
+        },
+        {
+            "name": "Microsoft Windows Desktop Runtime - 6.0.21 (x64)",
+            "version": "48.87.64723"
+        },
+        {
+            "name": "ASUS AURA Display Component",
+            "version": "1.1.25"
+        },
+        {
+            "name": "NVIDIA Graphics Driver 565.90",
+            "version": "565.90"
+        },
+        {
+            "name": "NVIDIA app 10.0.3.152",
+            "version": "10.0.3.152"
+        },
+        {
+            "name": "NVIDIA MessageBus 3 for NvApp",
+            "version": "3.12"
+        },
+        {
+            "name": "NVIDIA Backend",
+            "version": "10.0.3.152"
+        },
+        {
+            "name": "NvCpl",
+            "version": "1.0"
+        },
+        {
+            "name": "NVIDIA Optimus Update 39.5.0.0",
+            "version": "39.5.0.0"
+        },
+        {
+            "name": "NVIDIA PhysX System Software 9.23.1019",
+            "version": "9.23.1019"
+        },
+        {
+            "name": "NVIDIA FrameView SDK 1.4.10330.34644786",
+            "version": "1.4.10330.34644786"
+        },
+        {
+            "name": "NVIDIA HD Audio Driver 1.4.2.6",
+            "version": "1.4.2.6"
+        },
+        {
+            "name": "NVIDIA Install Application",
+            "version": "2.1002.422.0"
+        },
+        {
+            "name": "NVIDIA Container",
+            "version": "1.41"
+        },
+        {
+            "name": "NVIDIA LocalSystem Container",
+            "version": "1.41"
+        },
+        {
+            "name": "NVIDIA Session Container",
+            "version": "1.41"
+        },
+        {
+            "name": "NVIDIA User Container",
+            "version": "1.41"
+        },
+        {
+            "name": "NVIDIA NvDLISR",
+            "version": "1.0"
+        },
+        {
+            "name": "NVIDIA Watchdog Plugin for NvContainer",
+            "version": "1.41"
+        },
+        {
+            "name": "NVIDIA Telemetry Client",
+            "version": "19.3.11.0"
+        },
+        {
+            "name": "NVIDIA Virtual Host Controller",
+            "version": "3.05.0.1"
+        },
+        {
+            "name": "NVIDIA ShadowPlay 10.0.3.115",
+            "version": "10.0.3.115"
+        },
+        {
+            "name": "NVIDIA Update Core",
+            "version": "39.5.0.0"
+        },
+        {
+            "name": "NVIDIA Virtual Audio 4.65.0.3",
+            "version": "4.65.0.3"
+        },
+        {
+            "name": "Microsoft Visual Studio Team Foundation Server 2017 RC Office Integration (x64)",
+            "version": "15.129.27701"
+        },
+        {
+            "name": "Microsoft Windows Desktop Targeting Pack - 5.0.0 (x64)",
+            "version": "40.0.29420"
+        },
+        {
+            "name": "Microsoft .NET Host FX Resolver - 6.0.16 (x64)",
+            "version": "48.67.58427"
+        },
+        {
+            "name": "Airshipper",
+            "version": "0.4.2"
+        },
+        {
+            "name": "Microsoft .NET Toolset 5.0.300 (x64)",
+            "version": "20.3.30197"
+        },
+        {
+            "name": "ASUS MB Peripheral Products",
+            "version": "1.0.31"
+        },
+        {
+            "name": "EA app",
+            "version": "13.380.0.5893"
+        },
+        {
+            "name": "AURA lighting effect add-on x64",
+            "version": "0.0.15"
+        },
+        {
+            "name": "Python 3.11.1 pip Bootstrap (64-bit)",
+            "version": "3.11.1150.0"
+        },
+        {
+            "name": "Microsoft .NET Runtime - 6.0.16 (x64)",
+            "version": "48.67.58427"
+        },
+        {
+            "name": "Go Programming Language amd64 go1.15.3",
+            "version": "1.15.3"
+        },
+        {
+            "name": "VS JIT Debugger",
+            "version": "16.0.102.0"
+        },
+        {
+            "name": "icecap_collection_x64",
+            "version": "15.6.27413"
+        },
+        {
+            "name": "vs_minshellx64msi",
+            "version": "17.8.34205"
+        },
+        {
+            "name": "Apple Mobile Device Support",
+            "version": "16.5.0.12"
+        },
+        {
+            "name": "Universal CRT Tools x64",
+            "version": "10.1.19041.685"
+        },
+        {
+            "name": "Microsoft .NET Core Host FX Resolver - 3.1.15 (x64)",
+            "version": "24.124.30014"
+        },
+        {
+            "name": "Microsoft Visual C++ 2012 x64 Minimum Runtime - 11.0.61030",
+            "version": "11.0.61030"
+        },
+        {
+            "name": "Microsoft ASP.NET Core 5.0.6 Shared Framework (x64)",
+            "version": "5.0.6.21223"
+        },
+        {
+            "name": "ASUS Aura SDK",
+            "version": "3.04.39"
+        },
+        {
+            "name": "Microsoft Windows Desktop Runtime - 3.1.15 (x64)",
+            "version": "24.124.30014"
+        },
+        {
+            "name": "Windows App Certification Kit Native Components",
+            "version": "10.1.19041.685"
+        },
+        {
+            "name": "Microsoft .NET Core AppHost Pack - 3.1.15 (x64_arm64)",
+            "version": "24.124.30014"
+        },
+        {
+            "name": "Python 3.10.11 Core Interpreter (64-bit)",
+            "version": "3.10.11150.0"
+        },
+        {
+            "name": "ASUS AURA Motherboard HAL",
+            "version": "1.0.56"
+        },
+        {
+            "name": "Microsoft .NET Host FX Resolver - 6.0.21 (x64)",
+            "version": "48.87.64667"
+        },
+        {
+            "name": "Update for x64-based Windows Systems (KB5001716)",
+            "version": "8.94.0.0"
+        },
+        {
+            "name": "Microsoft .NET Host - 5.0.4 (x64)",
+            "version": "40.16.29816"
+        },
+        {
+            "name": "Microsoft .NET Runtime - 5.0.6 (x64)",
+            "version": "40.24.30020"
+        },
+        {
+            "name": "Google Chrome",
+            "version": "134.0.6998.166"
+        },
+        {
+            "name": "Microsoft Visual C++ 2022 X64 Additional Runtime - 14.42.34433",
+            "version": "14.42.34433"
+        },
+        {
+            "name": "Blender",
+            "version": "2.79.2"
+        },
+        {
+            "name": "LibreOffice 24.8.4.2",
+            "version": "24.8.4.2"
+        },
+        {
+            "name": "Microsoft .NET AppHost Pack - 5.0.6 (x64_x86)",
+            "version": "40.24.30020"
+        },
+        {
+            "name": "Python 3.11.1 Utility Scripts (64-bit)",
+            "version": "3.11.1150.0"
+        },
+        {
+            "name": "Microsoft .NET Host - 7.0.7 (x64)",
+            "version": "56.31.61636"
+        },
+        {
+            "name": "ASUS AIOFan HAL",
+            "version": "1.0.15"
+        },
+        {
+            "name": "Windows SDK DirectX x64 Remote",
+            "version": "10.1.19041.685"
+        },
+        {
+            "name": "Microsoft .NET Runtime - 7.0.7 (x64)",
+            "version": "56.31.61636"
+        },
+        {
+            "name": "Exterro FTK Imager",
+            "version": "4.7.3.81"
+        },
+        {
+            "name": "Microsoft System CLR Types for SQL Server 2017",
+            "version": "14.0.3006.16"
+        },
+        {
+            "name": "Python 3.9.1 pip Bootstrap (64-bit)",
+            "version": "3.9.1150.0"
+        },
+        {
+            "name": "ARMOURY CRATE Lite Service",
+            "version": "5.2.10"
+        },
+        {
+            "name": "Python 3.11.1 Test Suite (64-bit)",
+            "version": "3.11.1150.0"
+        },
+        {
+            "name": "Paradox Launcher v2",
+            "version": "2.0.0.0"
+        },
+        {
+            "name": "MySQL Workbench 8.0 CE",
+            "version": "8.0.34"
+        },
+        {
+            "name": "Python 3.10.11 Executables (64-bit)",
+            "version": "3.10.11150.0"
+        },
+        {
+            "name": "Microsoft .NET Targeting Pack - 5.0.0 (x64)",
+            "version": "40.0.29513"
+        },
+        {
+            "name": "UE4 Prerequisites (x64)",
+            "version": "1.0.11.0"
+        },
+        {
+            "name": "GOG.com Unreal Tournament GOTY",
+            "version": "Version not found"
+        },
+        {
+            "name": "Microsoft Visual Studio 2010 Tools for Office Runtime (x64)",
+            "version": "10.0.60830"
+        },
+        {
+            "name": "Microsoft ASP.NET Core 3.1.10 Targeting Pack (x64)",
+            "version": "3.1.10.20520"
+        }
+    ]
+}
