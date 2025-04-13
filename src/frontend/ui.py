@@ -1,66 +1,101 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QTextEdit
-from PyQt5.QtCore import Qt
-
-# Import the system_info module from the backend directory
 import os
-import sys
-
+import requests
+import webbrowser
+from bs4 import BeautifulSoup
+from PyQt5.QtWidgets import (
+    QApplication, QWidget, QPushButton, QVBoxLayout, QTextEdit, QLabel,
+    QHBoxLayout, QListWidget, QListWidgetItem, QHBoxLayout
+)
+from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtGui import QPixmap
+from GoogleNews import GoogleNews
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend')))
+import system_info  
 
-import system_info  # Now system_info.py can be imported
+from GoogleNews import GoogleNews
 
+def get_top_cybersecurity_news(count=5):
+    googlenews = GoogleNews(lang='en', region='US')
+    googlenews.search('cybersecurity')
+    results = googlenews.results(sort=True)
+
+    articles = []
+    for item in results[:count]:
+        title = item.get('title', 'No Title')
+        link = item.get('link', '#')
+        image = item.get('img', None)  #image not showing for me 
+        articles.append((title, link, image))
+    
+    return articles
+
+# === Main Application ===
 class App(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
 
     def initUI(self):
-        # Set up the window
         self.setWindowTitle('System Information Scanner')
-        self.setGeometry(100, 100, 600, 400)
+        self.setGeometry(100, 100, 900, 500)
 
-        # Create a button and connect it to the scan function
-        self.scan_button = QPushButton('Scan', self)
-        self.scan_button.clicked.connect(self.scan)
+        # === Left Sidebar: Cyber News ===
+        self.news_label = QLabel("Cyber News")
+        self.news_label.setStyleSheet("font-size: 16px; font-weight: bold; color: white;")
+        self.news_list = QListWidget()
+        self.news_list.setStyleSheet("""
+            QListWidget {
+                background-color: #1e1e1e;
+                color: white;
+                border: none;
+            }
+            QListWidget::item {
+                padding: 10px;
+            }
+            QListWidget::item:hover {
+                background-color: #333;
+            }
+        """)
 
-        # Create a text area to display results
-        self.result_text = QTextEdit(self)
+        sidebar_layout = QVBoxLayout()
+        sidebar_layout.addWidget(self.news_label)
+        sidebar_layout.addWidget(self.news_list)
+
+        # === Main Area ===
+        self.result_text = QTextEdit()
         self.result_text.setReadOnly(True)
 
-        # Set up the layout
-        layout = QVBoxLayout()
-        layout.addWidget(self.scan_button)
-        layout.addWidget(self.result_text)
+        self.scan_button = QPushButton('Scan')
+        self.scan_button.clicked.connect(self.scan)
 
-        # Set the layout to the window
-        self.setLayout(layout)
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(self.result_text)
+        main_layout.addWidget(self.scan_button)
 
-        # Apply CSS to the application window
+        # === Full Layout ===
+        full_layout = QHBoxLayout()
+        sidebar_widget = QWidget()
+        sidebar_widget.setLayout(sidebar_layout)
+        sidebar_widget.setFixedWidth(300)
+
+        main_widget = QWidget()
+        main_widget.setLayout(main_layout)
+
+        full_layout.addWidget(sidebar_widget)
+        full_layout.addWidget(main_widget)
+
+        self.setLayout(full_layout)
+
+        # Load Cyber News
+        self.load_news_articles()
+
+        # Style
         self.setStyleSheet("""
-            body {
-                font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-                line-height: 1.5;
-                font-weight: 400;
-                background-color: #242424;
-                margin: 0;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                min-height: 100vh;
-                color: rgba(255, 255, 255, 0.87);
-            }
-
             QWidget {
                 background-color: #242424;
-            }
-
-            h1 {
-                font-size: 3.2em;
-                line-height: 1.1;
                 color: #ffffff;
+                font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
             }
-
             QPushButton {
                 padding: 0.6em 1.2em;
                 font-size: 1em;
@@ -69,61 +104,74 @@ class App(QWidget):
                 color: #fff;
                 border-radius: 8px;
                 border: 1px solid transparent;
-                cursor: pointer;
-                transition: border-color 0.25s;
             }
-
             QPushButton:hover {
                 border-color: #646cff;
             }
-
-            QPushButton:focus,
-            QPushButton:focus-visible {
-                outline: 4px auto -webkit-focus-ring-color;
-            }
-
             QTextEdit {
                 font-size: 1em;
-                font-weight: 400;
-                color: rgba(255, 255, 255, 0.87);
                 background-color: #333333;
                 border: 1px solid #444444;
                 border-radius: 8px;
                 padding: 10px;
             }
-
-            QTextEdit:focus {
-                border-color: #646cff;
-            }
         """)
 
+    def load_news_articles(self):
+        self.news_list.clear()
+        articles = get_top_cybersecurity_news()
+
+        for title, link, image_url in articles:
+            widget = QWidget()
+            layout = QHBoxLayout()
+            layout.setContentsMargins(5, 5, 5, 5)
+
+            # Thumbnail
+            img_label = QLabel()
+            img_label.setFixedSize(60, 60)
+            if image_url:
+                try:
+                    img_data = requests.get(image_url).content
+                    pixmap = QPixmap()
+                    pixmap.loadFromData(img_data)
+                    pixmap = pixmap.scaled(60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                    img_label.setPixmap(pixmap)
+                except Exception as e:
+                    print("Image load failed:", e)
+            layout.addWidget(img_label)
+
+            # Title
+            title_label = QLabel(title)
+            title_label.setWordWrap(True)
+            layout.addWidget(title_label)
+
+            widget.setLayout(layout)
+            item = QListWidgetItem()
+            item.setSizeHint(QSize(0, 70))
+            self.news_list.addItem(item)
+            self.news_list.setItemWidget(item, widget)
+
+            # Connect click to open in browser
+            def open_link(_, url=link):
+                webbrowser.open(url)
+
+            self.news_list.itemClicked.connect(open_link)
+
     def scan(self):
-        # Get system information by calling functions from system_info.py
         os_platform = system_info.get_OS_platform()
         os_version = system_info.get_OS_version()
         installed_programs = system_info.get_installed_programs()
         system_services = system_info.get_system_services()
 
-        # Prepare the output to display in the text area
         result = f"Operating System: {os_platform}\n"
-        result += f"OS Version: {os_version}\n\n"
-        result += "Installed Programs:\n"
-        if isinstance(installed_programs, list):
-            for program in installed_programs:
-                result += f"{program[0]} - {program[1]}\n"
-        else:
-            result += installed_programs + "\n"
-        
-        result += "\nSystem Services:\n"
-        if isinstance(system_services, list):
-            for service in system_services:
-                result += f"{service[0]} - {service[1]} - {service[2]}\n"
-        else:
-            result += system_services + "\n"
-        
-        # Display the result in the text area
+        result += f"OS Version: {os_version}\n\nInstalled Programs:\n"
+        result += "\n".join([f"{prog[0]} - {prog[1]}" for prog in installed_programs]) if isinstance(installed_programs, list) else installed_programs
+        result += "\n\nSystem Services:\n"
+        result += "\n".join([f"{svc[0]} - {svc[1]} - {svc[2]}" for svc in system_services]) if isinstance(system_services, list) else system_services
+
         self.result_text.setText(result)
 
+# === Run the Application ===
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = App()
