@@ -1,3 +1,4 @@
+
 import os
 import json
 import gzip
@@ -151,87 +152,6 @@ def get_installed_programs():
     return programs
 
 
-# --- Match Installed Programs with CVEs ---
-
-def match_installed_software():
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-
-    programs = get_installed_programs()
-    print(f"Found {len(programs)} installed programs.")
-    matched = []
-
-    for prog_name, installed_version in programs:
-        like_name = f"%{prog_name.split()[0]}%"
-        c.execute('''
-            SELECT id, vendor, product, version_start, version_end, description, published_date, cvss_score
-            FROM cves
-            WHERE product LIKE ?
-        ''', (like_name,))
-        results = c.fetchall()
-
-        for row in results:
-            cve_id, vendor, product, v_start, v_end, description, pub_date, cvss = row
-
-            try:
-                installed_v = vparse.parse(installed_version)
-                v_start_parsed = vparse.parse(v_start) if v_start else None
-                v_end_parsed = vparse.parse(v_end) if v_end else None
-
-                if ((not v_start_parsed or installed_v >= v_start_parsed) and
-                    (not v_end_parsed or installed_v <= v_end_parsed)):
-
-                    severity = classify_cvss(cvss)
-                    action = suggest_action(cvss)
-
-                    matched.append({
-                        "cve_id": cve_id,
-                        "vendor": vendor,
-                        "product": product,
-                        "affected_version": f"{v_start or '?'} to {v_end or '?'}",
-                        "description": description,
-                        "published": pub_date,
-                        "cvss_score": cvss,
-                        "cvss_severity": severity,
-                        "recommended_action": action,
-                        "matched_program": prog_name,
-                        "installed_version": installed_version
-                    })
-            except Exception:
-                continue
-
-    conn.close()
-
-    print(f"\nFound {len(matched)} matching CVEs.\n")
-
-    # --- Write Report ---
-    with open("cve_report.csv", "w", newline='', encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=matched[0].keys())
-        writer.writeheader()
-        writer.writerows(matched)
-
-    for match in matched:
-        print(f"[{match['cve_id']}] {match['matched_program']} (installed: {match['installed_version']})")
-        print(f"-> {match['description'][:100]}...")
-        print(f"CVSS: {match['cvss_score']} ({match['cvss_severity']}) | Action: {match['recommended_action']}")
-        print(f"Published: {match['published']}\n")
-
-    print("✅ Report saved to 'cve_report.csv'.")
-    total = len(matched)
-    critical = sum(1 for m in matched if m["cvss_severity"] == "Critical")
-    high = sum(1 for m in matched if m["cvss_severity"] == "High")
-    medium = sum(1 for m in matched if m["cvss_severity"] == "Medium")
-    low = sum(1 for m in matched if m["cvss_severity"] == "Low")
-    unknown = total - (critical + high + medium + low)
-
-    print("\n--- CVE Summary ---")
-    print(f"Total CVEs Found: {total}")
-    print(f"Critical: {critical}")
-    print(f"High: {high}")
-    print(f"Medium: {medium}")
-    print(f"Low: {low}")
-    print(f"Unknown Severity: {unknown}")
-
 def classify_cvss(score):
     if score is None:
         return "Unknown"
@@ -257,11 +177,89 @@ def suggest_action(score):
     else:
         return "No action required"
 
+# --- Match Installed Programs with CVEs ---
+def match_installed_software():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+
+    programs = get_installed_programs()
+    print(f"Found {len(programs)} installed programs.")
+
+    matched = []
+
+    for name, version in programs:
+        like_name = f"%{name.split()[0]}%"
+        c.execute('''
+            SELECT id, vendor, product, version_start, version_end, description, published_date, cvss_score
+            FROM cves
+            WHERE product LIKE ?
+        ''', (like_name,))
+        results = c.fetchall()
+        for row in results:
+            matched.append({
+                "cve_id": row[0],
+                "vendor": row[1],
+                "product": row[2],
+                "version_start": row[3],
+                "version_end": row[4],
+                "description": row[5],
+                "published_date": row[6],
+                "cvss_score": row[7],
+                "cvss_severity":classify_cvss(row[7]),
+                "suggested_action":suggest_action(row[7]),
+                "matched_program": name,
+                "installed_version": version
+            })
+
+    conn.close()
+
+    print(f"\nFound {len(matched)} matching CVEs:\n")
+    for match in matched:
+        print(f"[{match['cve_id']}] {match['matched_program']} (installed: {match['installed_version']})")
+        print(f"-> {match['description'][:100]}...")
+        print(f"Published: {match['published_date']}")
+        print(f"Severity: {match['cvss_severity']}")
+        print(f"Suggested Action: {match['suggested_action']}\n")
+        total = len(matched)
+
+    critical = sum(1 for m in matched if m["cvss_severity"] == "Critical")
+    high = sum(1 for m in matched if m["cvss_severity"] == "High")
+    medium = sum(1 for m in matched if m["cvss_severity"] == "Medium")
+    low = sum(1 for m in matched if m["cvss_severity"] == "Low")
+    unknown = total - (critical + high + medium + low)
+
+    print("\n--- CVE Summary ---")
+    print(f"Total CVEs Found: {total}")
+    print(f"Critical: {critical}")
+    print(f"High: {high}")
+    print(f"Medium: {medium}")
+    print(f"Low: {low}")
+    print(f"Unknown Severity: {unknown}")
+
+    # Generate timestamped CSV filename
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    csv_filename = f"cybervault-scan-{timestamp}.csv"
+
+    # Write to CSV
+    with open(csv_filename, mode="w", newline='', encoding="utf-8") as csvfile:
+        fieldnames = [
+            "cve_id", "vendor", "product", "version_start", "version_end", "description",
+            "published_date", "cvss_score", "cvss_severity", "suggested_action",
+            "matched_program", "installed_version"
+        ]
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in matched:
+            writer.writerow(row)
+
+    print(f"\nCSV report generated: {csv_filename}")
+
+
+
 
 # --- Run All ---
-if __name__ == "__main__":
-    print("Building or updating CVE database...")
-#    build_or_update_db()
+print("Building or updating CVE database...")
+#build_or_update_db()
 
-    print("\nScanning installed programs and matching with CVEs...")
-    match_installed_software()
+print("\nScanning installed programs and matching with CVEs...")
+match_installed_software()
