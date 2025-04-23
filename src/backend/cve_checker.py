@@ -232,12 +232,36 @@ def match_installed_software():
     print(f"Low: {low}")
     print(f"Unknown Severity: {unknown}")
 
+def classify_cvss(score):
+    if score is None:
+        return "Unknown"
+    score = float(score)
+    if score >= 9.0:
+        return "Critical"
+    elif score >= 7.0:
+        return "High"
+    elif score >= 4.0:
+        return "Medium"
+    elif score > 0:
+        return "Low"
+    return "None"
+
+def suggest_action(score):
+    severity = classify_cvss(score)
+    if severity in ("Critical", "High"):
+        return "Update immediately or uninstall"
+    elif severity == "Medium":
+        return "Consider updating soon"
+    elif severity == "Low":
+        return "Optional update"
+    else:
+        return "No action required"
 
 
 # --- Run All ---
 if __name__ == "__main__":
     print("Building or updating CVE database...")
-    build_or_update_db()
+#    build_or_update_db()
 
     print("\nScanning installed programs and matching with CVEs...")
     match_installed_software()
