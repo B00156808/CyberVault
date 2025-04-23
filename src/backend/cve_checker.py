@@ -7,6 +7,7 @@ import winreg
 from datetime import datetime
 from urllib.parse import unquote
 from time import *
+import csv  
 
 
 # --- Configuration ---
@@ -28,7 +29,8 @@ def create_db():
             version_start TEXT,
             version_end TEXT,
             description TEXT,
-            published_date TEXT
+            published_date TEXT,
+            cvss_score REAL
         )
     ''')
     conn.commit()
@@ -48,16 +50,18 @@ def parse_cpe(cpe_uri):
 
 
 # --- Insert CVEs into DB ---
-def insert_cve(conn, cve_id, vendor, product, version, description, published_date):
+def insert_cve(conn, cve_id, vendor, product, version_start, version_end, description, published_date, cvss_score):
     c = conn.cursor()
     try:
         c.execute('''
-            INSERT OR IGNORE INTO cves (id, vendor, product, version_start, version_end, description, published_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (cve_id, vendor, product, version, version, description, published_date))
+            INSERT OR IGNORE INTO cves 
+            (id, vendor, product, version_start, version_end, description, published_date, cvss_score)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (cve_id, vendor, product, version_start, version_end, description, published_date, cvss_score))
     except Exception as e:
         print(f"Insert failed: {e}")
     conn.commit()
+
 
 
 # --- Download + Parse JSON Feed ---
@@ -74,15 +78,24 @@ def process_feed(feed_name, conn):
         cve_id = item["cve"]["CVE_data_meta"]["ID"]
         description = item["cve"]["description"]["description_data"][0]["value"]
         published_date = item["publishedDate"]
-        nodes = item.get("configurations", {}).get("nodes", [])
 
+        # Try to get CVSS v3, fall back to v2
+        impact = item.get("impact", {})
+        cvss_score = None
+        if "baseMetricV3" in impact:
+            cvss_score = impact["baseMetricV3"]["cvssV3"]["baseScore"]
+        elif "baseMetricV2" in impact:
+            cvss_score = impact["baseMetricV2"]["cvssV2"]["baseScore"]
+
+        nodes = item.get("configurations", {}).get("nodes", [])
         for node in nodes:
             cpe_matches = node.get("cpe_match", [])
             for cpe in cpe_matches:
                 cpe_uri = cpe.get("cpe23Uri")
                 vendor, product, version = parse_cpe(cpe_uri)
                 if vendor and product and version:
-                    insert_cve(conn, cve_id, vendor, product, version, description, published_date)
+                    insert_cve(conn, cve_id, vendor, product, version, version, description, published_date, cvss_score)
+
 
 
 # --- Build or Update CVE DB ---
@@ -139,42 +152,86 @@ def get_installed_programs():
 
 
 # --- Match Installed Programs with CVEs ---
+
 def match_installed_software():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
 
     programs = get_installed_programs()
     print(f"Found {len(programs)} installed programs.")
-
     matched = []
 
-    for name, version in programs:
-        like_name = f"%{name.split()[0]}%"
+    for prog_name, installed_version in programs:
+        like_name = f"%{prog_name.split()[0]}%"
         c.execute('''
-            SELECT id, vendor, product, version_start, description, published_date
+            SELECT id, vendor, product, version_start, version_end, description, published_date, cvss_score
             FROM cves
             WHERE product LIKE ?
         ''', (like_name,))
         results = c.fetchall()
+
         for row in results:
-            matched.append({
-                "cve_id": row[0],
-                "vendor": row[1],
-                "product": row[2],
-                "affected_version": row[3],
-                "description": row[4],
-                "published": row[5],
-                "matched_program": name,
-                "installed_version": version
-            })
+            cve_id, vendor, product, v_start, v_end, description, pub_date, cvss = row
+
+            try:
+                installed_v = vparse.parse(installed_version)
+                v_start_parsed = vparse.parse(v_start) if v_start else None
+                v_end_parsed = vparse.parse(v_end) if v_end else None
+
+                if ((not v_start_parsed or installed_v >= v_start_parsed) and
+                    (not v_end_parsed or installed_v <= v_end_parsed)):
+
+                    severity = classify_cvss(cvss)
+                    action = suggest_action(cvss)
+
+                    matched.append({
+                        "cve_id": cve_id,
+                        "vendor": vendor,
+                        "product": product,
+                        "affected_version": f"{v_start or '?'} to {v_end or '?'}",
+                        "description": description,
+                        "published": pub_date,
+                        "cvss_score": cvss,
+                        "cvss_severity": severity,
+                        "recommended_action": action,
+                        "matched_program": prog_name,
+                        "installed_version": installed_version
+                    })
+            except Exception:
+                continue
 
     conn.close()
 
-    print(f"\nFound {len(matched)} matching CVEs:\n")
+    print(f"\nFound {len(matched)} matching CVEs.\n")
+
+    # --- Write Report ---
+    with open("cve_report.csv", "w", newline='', encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=matched[0].keys())
+        writer.writeheader()
+        writer.writerows(matched)
+
     for match in matched:
         print(f"[{match['cve_id']}] {match['matched_program']} (installed: {match['installed_version']})")
         print(f"-> {match['description'][:100]}...")
+        print(f"CVSS: {match['cvss_score']} ({match['cvss_severity']}) | Action: {match['recommended_action']}")
         print(f"Published: {match['published']}\n")
+
+    print("✅ Report saved to 'cve_report.csv'.")
+    total = len(matched)
+    critical = sum(1 for m in matched if m["cvss_severity"] == "Critical")
+    high = sum(1 for m in matched if m["cvss_severity"] == "High")
+    medium = sum(1 for m in matched if m["cvss_severity"] == "Medium")
+    low = sum(1 for m in matched if m["cvss_severity"] == "Low")
+    unknown = total - (critical + high + medium + low)
+
+    print("\n--- CVE Summary ---")
+    print(f"Total CVEs Found: {total}")
+    print(f"Critical: {critical}")
+    print(f"High: {high}")
+    print(f"Medium: {medium}")
+    print(f"Low: {low}")
+    print(f"Unknown Severity: {unknown}")
+
 
 
 # --- Run All ---
