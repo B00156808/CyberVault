@@ -34,7 +34,7 @@ class NewsItemWidget(QWidget):
         layout.addWidget(self.desc_label)
 
         self.setLayout(layout)
-
+        self.setStyleSheet("background-color: transparent;")
         # Allow dynamic resizing
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
 
@@ -119,15 +119,16 @@ class App(QWidget):
         self.home_news_list = QListWidget()
         self.home_news_list.setStyleSheet("""
             QListWidget {
-                background-color: #1e1e1e;
+                background-color: #121212;  /* matches darker gray tones */
                 color: white;
-                border: 1px solid #333;
+                border: none;
             }
             QListWidget::item {
                 padding: 8px;
+                background-color: transparent;
             }
             QListWidget::item:hover {
-                background-color: #333;
+                background-color: #2a2a2a;
             }
         """)
         self.home_news_list.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
