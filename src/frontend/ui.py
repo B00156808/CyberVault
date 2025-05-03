@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QStackedWidget, QPushButton,
     QLabel, QHBoxLayout, QListWidget, QListWidgetItem, QTextEdit, QSizePolicy, QScrollArea
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap, QPainter, QBrush
 
 # Import your custom system_info module
@@ -66,7 +66,7 @@ class App(QWidget):
         super().__init__()
         self.api_key = api_key
         self.setWindowTitle("Cybervault")
-        self.setGeometry(100, 100, 1000, 600)
+        #self.setGeometry(100, 100, 1000, 600)
         self.setStyleSheet("background-color: #0d0d0d; color: white;")
 
         self.main_layout = QVBoxLayout()
@@ -255,8 +255,17 @@ class App(QWidget):
 
     def init_news_page(self):
         news_widget = QWidget()
-        layout = QVBoxLayout()
+        layout = QHBoxLayout()
 
+        # Left: Empty container
+        left_layout = QVBoxLayout()
+        left_layout.setSpacing(0)  # No spacing
+        left_layout.addStretch(1)  # Take up flexible space
+        left_container = QWidget()
+        left_container.setLayout(left_layout)
+
+        # Middle: Cyber News Preview (the actual content)
+        middle_layout = QVBoxLayout()
         label = QLabel("Latest Cybersecurity News")
         label.setStyleSheet("""
             font-size: 24px;
@@ -272,13 +281,28 @@ class App(QWidget):
         self.scroll_content.setLayout(self.scroll_layout)
         self.scroll_area.setWidget(self.scroll_content)
 
-        layout.addWidget(label)
-        layout.addWidget(self.scroll_area)
+        middle_layout.addWidget(label)
+        middle_layout.addWidget(self.scroll_area)
 
-        self.load_news_articles()
+        middle_container = QWidget()
+        middle_container.setLayout(middle_layout)
+
+        # Right: Empty container
+        right_layout = QVBoxLayout()
+        right_layout.setSpacing(0)  # No spacing
+        right_layout.addStretch(1)  # Take up flexible space
+        right_container = QWidget()
+        right_container.setLayout(right_layout)
+
+        # Add left, middle, and right containers to the layout
+        layout.addWidget(left_container, 1)  # Left takes flexible space
+        layout.addWidget(middle_container, 3)  # Middle takes 3 times as much space
+        layout.addWidget(right_container, 1)  # Right takes flexible space
 
         news_widget.setLayout(layout)
         self.stacked_widget.addWidget(news_widget)
+
+        self.load_news_articles()  # Load the news articles
 
     def create_circular_pixmap(self, pixmap, size=100):
         circular = QPixmap(size, size)
@@ -448,5 +472,6 @@ class App(QWidget):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = App(API_KEY)
-    window.show()
+    window.resize(1920, 1080)
+    window.show()  # Must be shown first
     sys.exit(app.exec_())
