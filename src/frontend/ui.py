@@ -25,17 +25,19 @@ class NewsItemWidget(QWidget):
         self.title_label = QLabel(title)
         self.title_label.setStyleSheet("font-size: 16px; font-weight: bold; color: white;")
         self.title_label.setWordWrap(True)
+        self.title_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         self.desc_label = QLabel(description)
         self.desc_label.setStyleSheet("font-size: 12px; color: #aaaaaa;")
         self.desc_label.setWordWrap(True)
+        self.desc_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         layout.addWidget(self.title_label)
         layout.addWidget(self.desc_label)
 
         self.setLayout(layout)
         self.setStyleSheet("background-color: transparent;")
-        # Allow dynamic resizing
+
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
 
 # === Get News Function ===
@@ -81,23 +83,66 @@ class App(QWidget):
         self.setLayout(self.main_layout)
 
     def init_nav_bar(self):
-        nav_bar = QHBoxLayout()
-        nav_bar.addWidget(self.create_nav_button("Home", self.show_home_page))
-        nav_bar.addWidget(self.create_nav_button("Cyber News", self.show_news_page))
-        nav_bar.addWidget(self.create_nav_button("Scanning Results", self.show_scanning_results_page))
-        nav_bar.addWidget(self.create_nav_button("About Us", self.show_about_us_page))
-        nav_bar_widget = QWidget()
-        nav_bar_widget.setLayout(nav_bar)
-        self.main_layout.addWidget(nav_bar_widget)
+        # Main nav layout
+        main_nav_layout = QHBoxLayout()
+        main_nav_layout.setAlignment(Qt.AlignCenter)
+
+        # Left group layout
+        left_layout = QHBoxLayout()
+        left_layout.setSpacing(20)
+        left_layout.addWidget(self.create_nav_button("Home", self.show_home_page))
+        left_layout.addWidget(self.create_nav_button("Cyber News", self.show_news_page))
+
+        # Center logo + label
+        logo_layout = QVBoxLayout()
+        logo_layout.setAlignment(Qt.AlignCenter)
+
+        company_label = QLabel("CyberVault")
+        company_label.setAlignment(Qt.AlignCenter)
+        company_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #0de8f2;")
+
+        logo_label = QLabel()
+        pixmap = QPixmap("CyberVaultLogo.png")
+        logo_label.setPixmap(pixmap.scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        logo_label.setAlignment(Qt.AlignCenter)
+
+        logo_layout.addWidget(company_label)
+        logo_layout.addWidget(logo_label)
+        logo_widget = QWidget()
+        logo_widget.setLayout(logo_layout)
+
+        # Right group layout
+        right_layout = QHBoxLayout()
+        right_layout.setSpacing(20)
+        right_layout.addWidget(self.create_nav_button("Scanning Results", self.show_scanning_results_page))
+        right_layout.addWidget(self.create_nav_button("About Us", self.show_about_us_page))
+
+        # Wrap left, center, right in the main layout with controlled spacing
+        main_nav_layout.addLayout(left_layout)
+        main_nav_layout.addSpacing(30)  # Spacing between left and logo
+        main_nav_layout.addWidget(logo_widget)
+        main_nav_layout.addSpacing(30)  # Spacing between logo and right
+        main_nav_layout.addLayout(right_layout)
+
+        # Add to main layout
+        nav_widget = QWidget()
+        nav_widget.setLayout(main_nav_layout)
+        self.main_layout.addWidget(nav_widget)
 
     def create_nav_button(self, text, callback):
         button = QPushButton(text)
         button.setStyleSheet("""
-            font-size: 16px;
-            color: white;
-            background-color: #1a1a1a;
-            border: 1px solid #333;
-            padding: 10px;
+            QPushButton {
+                font-size: 16px;
+                color: white;
+                background-color: #1a1a1a;
+                border: 1px solid #333;
+                padding: 10px;
+            }
+            QPushButton:hover {
+                background-color: #333333;
+                border-color: #0de8f2;
+            }
         """)
         button.setFixedWidth(150)
         button.clicked.connect(callback)
@@ -133,8 +178,27 @@ class App(QWidget):
         """)
         self.home_news_list.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        left_layout.addWidget(news_label)
-        left_layout.addWidget(self.home_news_list)
+        # Container for the preview and scan results
+        left_container = QVBoxLayout()
+        left_container.addWidget(news_label)
+
+        # Top: News list (takes 3/4 of space)
+        left_container.addWidget(self.home_news_list, stretch=3)
+
+        # Bottom: Scan results viewer (1/4 of space)
+        self.scan_results_box = QTextEdit()
+        self.scan_results_box.setReadOnly(True)
+        self.scan_results_box.setPlaceholderText("No scan results yet.")
+        self.scan_results_box.setStyleSheet("""
+            background-color: #1e1e1e;
+            color: #0de8f2;
+            font-size: 12px;
+            border: 1px solid #333;
+            padding: 5px;
+        """)
+        left_container.addWidget(self.scan_results_box, stretch=1)
+
+        left_layout.addLayout(left_container)
 
         # Right: Welcome and Scan
         right_layout = QVBoxLayout()
@@ -168,6 +232,7 @@ class App(QWidget):
         self.stacked_widget.addWidget(home_widget)
 
         self.load_home_news_preview()
+
 
     def load_home_news_preview(self):
         self.home_news_list.clear()

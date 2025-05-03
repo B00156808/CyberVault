@@ -1,0 +1,14 @@
+self.home_news_list.setStyleSheet("""
+    QListWidget {
+        background-color: #121212;  /* matches darker gray tones */
+        color: white;
+        border: none;
+    }
+    QListWidget::item {
+        padding: 8px;
+        background-color: transparent;
+    }
+    QListWidget::item:hover {
+        background-color: #2a2a2a;
+    }
+""")
