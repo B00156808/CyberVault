@@ -8,6 +8,7 @@ import winreg
 from datetime import datetime
 from urllib.parse import unquote
 from time import *
+from packaging import version as pkg_version
 import csv  
 
 
@@ -187,41 +188,67 @@ def match_installed_software():
 
     matched = []
 
-    for name, version in programs:
-        like_name = f"%{name.split()[0]}%"
+    for name, installed_version in programs:
+        base_name = name.split()[0].lower()
+        like_name = f"%{base_name}%"
+
         c.execute('''
             SELECT id, vendor, product, version_start, version_end, description, published_date, cvss_score
             FROM cves
             WHERE product LIKE ?
         ''', (like_name,))
         results = c.fetchall()
+
         for row in results:
-            matched.append({
-                "cve_id": row[0],
-                "vendor": row[1],
-                "product": row[2],
-                "version_start": row[3],
-                "version_end": row[4],
-                "description": row[5],
-                "published_date": row[6],
-                "cvss_score": row[7],
-                "cvss_severity":classify_cvss(row[7]),
-                "suggested_action":suggest_action(row[7]),
-                "matched_program": name,
-                "installed_version": version
-            })
+            cve_id, vendor, product, v_start, v_end, description, pub_date, cvss_score = row
+
+            try:
+                inst_ver = pkg_version.parse(installed_version)
+                start_ver = pkg_version.parse(v_start) if v_start else None
+                end_ver = pkg_version.parse(v_end) if v_end else None
+
+                version_match = True
+                if start_ver and inst_ver < start_ver:
+                    version_match = False
+                if end_ver and inst_ver > end_ver:
+                    version_match = False
+
+                if version_match:
+                    matched.append({
+                        "cve_id": cve_id,
+                        "vendor": vendor,
+                        "product": product,
+                        "version_start": v_start,
+                        "version_end": v_end,
+                        "description": description,
+                        "published_date": pub_date,
+                        "cvss_score": cvss_score,
+                        "cvss_severity": classify_cvss(cvss_score),
+                        "suggested_action": suggest_action(cvss_score),
+                        "matched_program": name,
+                        "installed_version": installed_version
+                    })
+
+            except Exception as e:
+                print(f"Version comparison failed for {name}: {e}")
 
     conn.close()
 
-    print(f"\nFound {len(matched)} matching CVEs:\n")
+    if not matched:
+        print("\n✅ No matching CVEs found for your installed software. Your system appears up to date and safe!")
+        return
+
+    # Display results
+    total = len(matched)
+    print(f"\nFound {total} matching CVEs:\n")
     for match in matched:
         print(f"[{match['cve_id']}] {match['matched_program']} (installed: {match['installed_version']})")
         print(f"-> {match['description'][:100]}...")
         print(f"Published: {match['published_date']}")
         print(f"Severity: {match['cvss_severity']}")
         print(f"Suggested Action: {match['suggested_action']}\n")
-        total = len(matched)
 
+    # Severity breakdown
     critical = sum(1 for m in matched if m["cvss_severity"] == "Critical")
     high = sum(1 for m in matched if m["cvss_severity"] == "High")
     medium = sum(1 for m in matched if m["cvss_severity"] == "Medium")
@@ -236,11 +263,9 @@ def match_installed_software():
     print(f"Low: {low}")
     print(f"Unknown Severity: {unknown}")
 
-    # Generate timestamped CSV filename
+    # Write to CSV
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     csv_filename = f"cybervault-scan-{timestamp}.csv"
-
-    # Write to CSV
     with open(csv_filename, mode="w", newline='', encoding="utf-8") as csvfile:
         fieldnames = [
             "cve_id", "vendor", "product", "version_start", "version_end", "description",

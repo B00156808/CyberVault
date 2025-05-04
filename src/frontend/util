@@ -14,9 +14,6 @@ self.home_news_list.setStyleSheet("""
 """)
 
 ____________________________________
-
-from packaging import version as pkg_version  # Requires `pip install packaging`
-
 def match_installed_software():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -73,8 +70,8 @@ def match_installed_software():
     conn.close()
 
     if not matched:
-    print("\n✅ No matching CVEs found for your installed software. Your system appears up to date and safe!")
-    return
+        print("\n✅ No matching CVEs found for your installed software. Your system appears up to date and safe!")
+        return
 
     # Display results
     total = len(matched)
@@ -104,6 +101,84 @@ def match_installed_software():
     # Write to CSV
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     csv_filename = f"cybervault-scan-{timestamp}.csv"
+    with open(csv_filename, mode="w", newline='', encoding="utf-8") as csvfile:
+        fieldnames = [
+            "cve_id", "vendor", "product", "version_start", "version_end", "description",
+            "published_date", "cvss_score", "cvss_severity", "suggested_action",
+            "matched_program", "installed_version"
+        ]
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in matched:
+            writer.writerow(row)
+
+    print(f"\nCSV report generated: {csv_filename}")
+    ____________________________________________________
+
+    # --- Match Installed Programs with CVEs ---
+def match_installed_software():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+
+    programs = get_installed_programs()
+    print(f"Found {len(programs)} installed programs.")
+
+    matched = []
+
+    for name, version in programs:
+        like_name = f"%{name.split()[0]}%"
+        c.execute('''
+            SELECT id, vendor, product, version_start, version_end, description, published_date, cvss_score
+            FROM cves
+            WHERE product LIKE ?
+        ''', (like_name,))
+        results = c.fetchall()
+        for row in results:
+            matched.append({
+                "cve_id": row[0],
+                "vendor": row[1],
+                "product": row[2],
+                "version_start": row[3],
+                "version_end": row[4],
+                "description": row[5],
+                "published_date": row[6],
+                "cvss_score": row[7],
+                "cvss_severity":classify_cvss(row[7]),
+                "suggested_action":suggest_action(row[7]),
+                "matched_program": name,
+                "installed_version": version
+            })
+
+    conn.close()
+
+    print(f"\nFound {len(matched)} matching CVEs:\n")
+    for match in matched:
+        print(f"[{match['cve_id']}] {match['matched_program']} (installed: {match['installed_version']})")
+        print(f"-> {match['description'][:100]}...")
+        print(f"Published: {match['published_date']}")
+        print(f"Severity: {match['cvss_severity']}")
+        print(f"Suggested Action: {match['suggested_action']}\n")
+        total = len(matched)
+
+    critical = sum(1 for m in matched if m["cvss_severity"] == "Critical")
+    high = sum(1 for m in matched if m["cvss_severity"] == "High")
+    medium = sum(1 for m in matched if m["cvss_severity"] == "Medium")
+    low = sum(1 for m in matched if m["cvss_severity"] == "Low")
+    unknown = total - (critical + high + medium + low)
+
+    print("\n--- CVE Summary ---")
+    print(f"Total CVEs Found: {total}")
+    print(f"Critical: {critical}")
+    print(f"High: {high}")
+    print(f"Medium: {medium}")
+    print(f"Low: {low}")
+    print(f"Unknown Severity: {unknown}")
+
+    # Generate timestamped CSV filename
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    csv_filename = f"cybervault-scan-{timestamp}.csv"
+
+    # Write to CSV
     with open(csv_filename, mode="w", newline='', encoding="utf-8") as csvfile:
         fieldnames = [
             "cve_id", "vendor", "product", "version_start", "version_end", "description",
