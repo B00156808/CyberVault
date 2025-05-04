@@ -10,6 +10,7 @@ from time import sleep
 import csv
 from collections import defaultdict, Counter
 import matplotlib.pyplot as plt
+from packaging.version import parse as parse_version  # NEW IMPORT
 
 # --- Configuration ---
 DB_FILE = "cves.db"
@@ -171,7 +172,7 @@ def suggest_action(score):
         return "No action required"
 
 
-# --- Match Installed Software (Grouped Version) ---
+# --- Match Installed Software (WITH version range checking) ---
 def match_installed_software():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -183,14 +184,27 @@ def match_installed_software():
 
     for name, version in programs:
         like_name = f"%{name.split()[0]}%"
+        try:
+            installed_version = parse_version(version)
+        except Exception:
+            continue  # Skip if version can't be parsed
+
         c.execute('''
-            SELECT id, cvss_score
+            SELECT id, cvss_score, version_start, version_end
             FROM cves
             WHERE product LIKE ?
         ''', (like_name,))
         results = c.fetchall()
-        if results:
-            grouped[(name, version)].extend(results)
+
+        for cve_id, cvss_score, version_start, version_end in results:
+            try:
+                if version_start and installed_version < parse_version(version_start):
+                    continue
+                if version_end and installed_version > parse_version(version_end):
+                    continue
+                grouped[(name, version)].append((cve_id, cvss_score))
+            except Exception:
+                continue
 
     print(f"\nFound {len(grouped)} potentially vulnerable programs:\n")
 
@@ -225,7 +239,7 @@ def match_installed_software():
 
         print(f"{prog_name} (version: {prog_version})")
         print(f"-> Total CVEs: {total_cves} | Critical: {severity_counts['Critical']}, High: {severity_counts['High']}, Medium: {severity_counts['Medium']}")
-        print(f"Suggested Action: {suggest_action(10 if most_severe == 'Critical' else 8 if most_severe == 'High' else 5 if most_severe == 'Medium' else 2)}\n")
+        print(f"Suggested Action: {summary[-1]['suggested_action']}\n")
 
     # Write grouped summary to CSV
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -246,7 +260,6 @@ def match_installed_software():
 
     conn.close()
 
-
     # Generate Pie Chart of CVE Severity
     severity_totals = Counter()
     for row in summary:
@@ -256,7 +269,6 @@ def match_installed_software():
         severity_totals["Low"] += row["low"]
         severity_totals["Unknown"] += row["unknown"]
 
-    # Filter out zero counts
     labels = []
     sizes = []
     for k, v in severity_totals.items():
@@ -265,7 +277,7 @@ def match_installed_software():
             sizes.append(v)
 
     colors = ["red", "orange", "gold", "lightgreen", "gray"]
-    explode = [0.1 if l.startswith("Critical") else 0 for l in labels]  # pop out Critical
+    explode = [0.1 if l.startswith("Critical") else 0 for l in labels]
 
     plt.figure(figsize=(8, 8))
     plt.pie(sizes, labels=labels, autopct='%1.1f%%', colors=colors[:len(labels)], explode=explode, startangle=140)
@@ -276,7 +288,6 @@ def match_installed_software():
     plt.show()
 
     print("📊 Pie chart saved as 'cve_severity_pie_chart.png'")
-
 
 
 # --- Run ---
