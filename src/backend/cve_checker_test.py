@@ -7,19 +7,18 @@ import winreg
 from datetime import datetime
 from urllib.parse import unquote
 from time import sleep
-import csv
 from collections import defaultdict, Counter
 import matplotlib.pyplot as plt
-from packaging.version import parse as parse_version  # NEW IMPORT
+from packaging.version import parse as parse_version
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
 
-# --- Configuration ---
 DB_FILE = "cves.db"
 BASE_URL = "https://nvd.nist.gov/feeds/json/cve/1.1/"
 YEARS = list(range(2002, datetime.now().year + 1))
 MODIFIED_FEED = "nvdcve-1.1-modified.json.gz"
 
-
-# --- Database Setup ---
 def create_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -38,19 +37,15 @@ def create_db():
     conn.commit()
     conn.close()
 
-
-# --- Parse CPE URI ---
 def parse_cpe(cpe_uri):
     parts = cpe_uri.split(":")
-    if len(parts) >= 5:
+    if len(parts) >= 6:
         vendor = parts[3].lower()
         product = parts[4].lower()
         version = parts[5].lower()
         return vendor, product, version
     return None, None, None
 
-
-# --- Insert CVEs into DB ---
 def insert_cve(conn, cve_id, vendor, product, version_start, version_end, description, published_date, cvss_score):
     c = conn.cursor()
     try:
@@ -63,8 +58,6 @@ def insert_cve(conn, cve_id, vendor, product, version_start, version_end, descri
         print(f"Insert failed: {e}")
     conn.commit()
 
-
-# --- Download + Parse JSON Feed ---
 def process_feed(feed_name, conn):
     url = f"{BASE_URL}{feed_name}"
     print(f"Downloading: {url}")
@@ -92,31 +85,11 @@ def process_feed(feed_name, conn):
             for cpe in cpe_matches:
                 cpe_uri = cpe.get("cpe23Uri")
                 vendor, product, version = parse_cpe(cpe_uri)
-                if vendor and product and version:
-                    insert_cve(conn, cve_id, vendor, product, version, version, description, published_date, cvss_score)
+                version_start = cpe.get("versionStartIncluding") or cpe.get("versionStartExcluding")
+                version_end = cpe.get("versionEndIncluding") or cpe.get("versionEndExcluding")
+                if vendor and product:
+                    insert_cve(conn, cve_id, vendor, product, version_start, version_end, description, published_date, cvss_score)
 
-
-# --- Build or Update CVE DB ---
-def build_or_update_db():
-    create_db()
-    conn = sqlite3.connect(DB_FILE)
-
-    for year in YEARS:
-        sleep(6)
-        try:
-            process_feed(f"nvdcve-1.1-{year}.json.gz", conn)
-        except Exception as e:
-            print(f"Failed year {year}: {e}")
-
-    try:
-        process_feed(MODIFIED_FEED, conn)
-    except Exception as e:
-        print(f"Failed modified feed: {e}")
-
-    conn.close()
-
-
-# --- Get Installed Programs on Windows ---
 def get_installed_programs():
     programs = []
     reg_paths = [
@@ -135,15 +108,11 @@ def get_installed_programs():
                                 name = winreg.QueryValueEx(subkey, "DisplayName")[0]
                                 version = winreg.QueryValueEx(subkey, "DisplayVersion")[0]
                                 programs.append((name.lower(), version))
-                        except FileNotFoundError:
-                            continue
                         except Exception:
                             continue
             except FileNotFoundError:
                 continue
-
     return programs
-
 
 def classify_cvss(score):
     if score is None:
@@ -159,7 +128,6 @@ def classify_cvss(score):
         return "Low"
     return "None"
 
-
 def suggest_action(score):
     severity = classify_cvss(score)
     if severity in ("Critical", "High"):
@@ -171,48 +139,22 @@ def suggest_action(score):
     else:
         return "No action required"
 
+def generate_pdf_report(timestamp, programs, grouped, full_details, pie_chart_path):
+    pdf_filename = f"cybervault-report-{timestamp}.pdf"
+    c = canvas.Canvas(pdf_filename, pagesize=A4)
+    width, height = A4
 
-# --- Match Installed Software (WITH version range checking) ---
-def match_installed_software():
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
+    # Page 1 - Summary
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, height - 50, f"CyberVault Vulnerability Scan Report")
+    c.setFont("Helvetica", 12)
+    c.drawString(50, height - 70, f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    c.drawString(50, height - 90, f"Found {len(programs)} installed programs.")
+    c.drawString(50, height - 110, f"Found {len(grouped)} potentially vulnerable programs:")
 
-    programs = get_installed_programs()
-    print(f"Found {len(programs)} installed programs.")
-
-    grouped = defaultdict(list)
-
-    for name, version in programs:
-        like_name = f"%{name.split()[0]}%"
-        try:
-            installed_version = parse_version(version)
-        except Exception:
-            continue  # Skip if version can't be parsed
-
-        c.execute('''
-            SELECT id, cvss_score, version_start, version_end
-            FROM cves
-            WHERE product LIKE ?
-        ''', (like_name,))
-        results = c.fetchall()
-
-        for cve_id, cvss_score, version_start, version_end in results:
-            try:
-                if version_start and installed_version < parse_version(version_start):
-                    continue
-                if version_end and installed_version > parse_version(version_end):
-                    continue
-                grouped[(name, version)].append((cve_id, cvss_score))
-            except Exception:
-                continue
-
-    print(f"\nFound {len(grouped)} potentially vulnerable programs:\n")
-
-    summary = []
-
+    y = height - 130
     for (prog_name, prog_version), cves in grouped.items():
         severity_counts = Counter(classify_cvss(score) for _, score in cves)
-        total_cves = len(cves)
         most_severe = (
             "Critical" if severity_counts["Critical"] > 0 else
             "High" if severity_counts["High"] > 0 else
@@ -220,54 +162,96 @@ def match_installed_software():
             "Low" if severity_counts["Low"] > 0 else
             "Unknown"
         )
-        summary.append({
-            "program": prog_name,
-            "version": prog_version,
-            "total_cves": total_cves,
-            "critical": severity_counts["Critical"],
-            "high": severity_counts["High"],
-            "medium": severity_counts["Medium"],
-            "low": severity_counts["Low"],
-            "unknown": severity_counts["Unknown"],
-            "suggested_action": suggest_action(
-                10 if most_severe == "Critical" else
-                8 if most_severe == "High" else
-                5 if most_severe == "Medium" else
-                2
-            )
-        })
+        action = suggest_action(
+            10 if most_severe == "Critical" else
+            8 if most_severe == "High" else
+            5 if most_severe == "Medium" else
+            2
+        )
+        text = f"{prog_name} (version: {prog_version})"
+        c.drawString(50, y, text)
+        y -= 15
+        c.drawString(60, y, f"-> Total CVEs: {len(cves)} | Critical: {severity_counts['Critical']}, High: {severity_counts['High']}, Medium: {severity_counts['Medium']}")
+        y -= 15
+        c.drawString(60, y, f"Suggested Action: {action}")
+        y -= 25
+        if y < 100:
+            c.showPage()
+            y = height - 50
 
-        print(f"{prog_name} (version: {prog_version})")
-        print(f"-> Total CVEs: {total_cves} | Critical: {severity_counts['Critical']}, High: {severity_counts['High']}, Medium: {severity_counts['Medium']}")
-        print(f"Suggested Action: {summary[-1]['suggested_action']}\n")
+    c.showPage()
 
-    # Write grouped summary to CSV
+    # Page 2 - Pie chart + details
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, height - 50, "CVE Severity Breakdown")
+    c.drawImage(ImageReader(pie_chart_path), 50, height - 400, width=500, height=300)
+
+    y = height - 420
+    c.setFont("Helvetica", 10)
+    for (prog_name, prog_version), details in full_details.items():
+        c.drawString(50, y, f"{prog_name} (version: {prog_version})")
+        y -= 15
+        for cve_id, desc, score in details:
+            c.drawString(60, y, f"{cve_id} (Score: {score}): {desc[:100]}...")
+            y -= 15
+            if y < 100:
+                c.showPage()
+                y = height - 50
+        y -= 10
+
+    c.save()
+    print(f"PDF report generated: {pdf_filename}")
+
+def match_installed_software():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    programs = get_installed_programs()
+    grouped = defaultdict(list)
+    full_details = defaultdict(list)
+
+    for name, version in programs:
+        try:
+            installed_version = parse_version(str(version))
+        except Exception:
+            continue
+
+        like_name = f"%{name.split()[0]}%"
+        c.execute('''
+            SELECT id, cvss_score, version_start, version_end, description
+            FROM cves
+            WHERE product LIKE ?
+        ''', (like_name,))
+        results = c.fetchall()
+
+        for cve_id, cvss_score, version_start, version_end, description in results:
+            try:
+                if version_start:
+                    version_start = str(version_start).strip()
+                if version_end:
+                    version_end = str(version_end).strip()
+
+                if version_start and version_end:
+                    if not (parse_version(version_start) <= installed_version <= parse_version(version_end)):
+                        continue
+                elif version_start:
+                    if installed_version < parse_version(version_start):
+                        continue
+                elif version_end:
+                    if installed_version > parse_version(version_end):
+                        continue
+
+                grouped[(name, version)].append((cve_id, cvss_score))
+                full_details[(name, version)].append((cve_id, description, cvss_score))
+            except Exception:
+                continue
+
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    csv_filename = f"cybervault-scan-summary-{timestamp}.csv"
 
-    with open(csv_filename, mode="w", newline='', encoding="utf-8") as csvfile:
-        fieldnames = [
-            "program", "version", "total_cves",
-            "critical", "high", "medium", "low", "unknown",
-            "suggested_action"
-        ]
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        for row in summary:
-            writer.writerow(row)
-
-    print(f"\nCSV summary report generated: {csv_filename}")
-
-    conn.close()
-
-    # Generate Pie Chart of CVE Severity
+    # Pie chart
     severity_totals = Counter()
-    for row in summary:
-        severity_totals["Critical"] += row["critical"]
-        severity_totals["High"] += row["high"]
-        severity_totals["Medium"] += row["medium"]
-        severity_totals["Low"] += row["low"]
-        severity_totals["Unknown"] += row["unknown"]
+    for values in grouped.values():
+        for _, score in values:
+            severity_totals[classify_cvss(score)] += 1
 
     labels = []
     sizes = []
@@ -279,17 +263,39 @@ def match_installed_software():
     colors = ["red", "orange", "gold", "lightgreen", "gray"]
     explode = [0.1 if l.startswith("Critical") else 0 for l in labels]
 
-    plt.figure(figsize=(8, 8))
+    plt.figure(figsize=(6, 6))
     plt.pie(sizes, labels=labels, autopct='%1.1f%%', colors=colors[:len(labels)], explode=explode, startangle=140)
     plt.title("Distribution of CVE Severities")
     plt.axis("equal")
     plt.tight_layout()
-    plt.savefig("cve_severity_pie_chart.png")
-    plt.show()
+    pie_chart_path = "cve_severity_pie_chart.png"
+    plt.savefig(pie_chart_path)
+    plt.close()
 
-    print("📊 Pie chart saved as 'cve_severity_pie_chart.png'")
+    print("\n Summary of Vulnerable Programs:\n")
+    for (prog_name, prog_version), cves in grouped.items():
+        severity_counts = Counter(classify_cvss(score) for _, score in cves)
+        most_severe = (
+            "Critical" if severity_counts["Critical"] > 0 else
+            "High" if severity_counts["High"] > 0 else
+            "Medium" if severity_counts["Medium"] > 0 else
+            "Low" if severity_counts["Low"] > 0 else
+            "Unknown"
+        )
+        action = suggest_action(
+            10 if most_severe == "Critical" else
+            8 if most_severe == "High" else
+            5 if most_severe == "Medium" else
+            2
+        )
 
+        print(f"{prog_name} (v{prog_version})")
+        print(f"Total CVEs: {len(cves)} | Critical: {severity_counts['Critical']}, High: {severity_counts['High']}, Medium: {severity_counts['Medium']}")
+        print(f"Suggested Action: {action}\n")
 
-# --- Run ---
+    generate_pdf_report(timestamp, programs, grouped, full_details, pie_chart_path)
+    conn.close()
+
+# Run
 print("Scanning installed programs and matching with CVEs...")
 match_installed_software()
