@@ -22,7 +22,7 @@ from reportlab.platypus import *
 
 # Configuration
 DB_FILE = "cves.db"
-BASE_URL = "https://nvd.nist.gov/feeds/json/cve/1.1/"
+BASE_URL = "http://nvd.nist.gov/feeds/json/cve/1.1/"
 YEARS = list(range(2002, datetime.now().year + 1))
 MODIFIED_FEED = "nvdcve-1.1-modified.json.gz"
 OUTPUT_DIR = "reports"
@@ -151,21 +151,18 @@ def process_feed(feed_name, conn):
 
 
 def download_cve_database():
-    """Download and process all CVE feeds."""
-    create_db()
-    conn = sqlite3.connect(DB_FILE)
-    
-    # First process the modified feed to get recent updates
-    process_feed(MODIFIED_FEED, conn)
-    
-    # Then process annual feeds
-    for year in YEARS:
-        annual_feed = f"nvdcve-1.1-{year}.json.gz"
-        process_feed(annual_feed, conn)
-        sleep(6)  # Be nice to the NVD server
-        
-    conn.close()
-    print("CVE database download complete.")
+    """Download cves.db from a remote server and save it locally."""
+    print("Downloading CVE database from remote server...")
+    try:
+        response = requests.get("https://malice.games/cves.db", timeout=60)
+        response.raise_for_status()
+        with open(DB_FILE, "wb") as f:
+            f.write(response.content)
+        print("CVE database downloaded successfully.")
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to download CVE database: {e}")
+        exit(1)
+
 
 
 def get_installed_programs():
@@ -680,11 +677,7 @@ def main():
     print("===============================")
     
     # Check if database exists, if not download it
-    if not os.path.exists(DB_FILE):
-        print("CVE database not found. Downloading...")
-        download_cve_database()
-    else:
-        print(f"Using existing CVE database: {DB_FILE}")
+    download_cve_database()
     
     # Scan system and generate report
     match_installed_software()
