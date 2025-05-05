@@ -2,18 +2,39 @@ import sys
 import os
 import requests
 import webbrowser
+from collections import Counter
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QStackedWidget, QPushButton,
-    QLabel, QHBoxLayout, QListWidget, QListWidgetItem, QTextEdit, QSizePolicy, QScrollArea
+    QLabel, QHBoxLayout, QListWidget, QListWidgetItem, QTextEdit, QSizePolicy, QScrollArea,
+    QFrame
 )
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QPixmap, QPainter, QBrush
+from PyQt5.QtGui import QPixmap, QPainter, QBrush, QColor
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 
 # Import your custom system_info module
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend')))
 import system_info
 
 API_KEY = '971cf28df41c8a5d09151bb993dd8f19'  # Your API key here
+
+
+# === Helper Functions ===
+def classify_cvss(score):
+    """Classify CVSS score into severity levels"""
+    if score >= 9.0:
+        return "Critical"
+    elif score >= 7.0:
+        return "High"
+    elif score >= 4.0:
+        return "Medium"
+    elif score > 0.0:
+        return "Low"
+    else:
+        return "None"
+
 
 # === News Item Widget ===
 class NewsItemWidget(QWidget):
@@ -40,6 +61,57 @@ class NewsItemWidget(QWidget):
 
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
 
+
+# === Pie Chart Canvas ===
+class VulnerabilityPieChart(FigureCanvas):
+    def __init__(self, parent=None, width=5, height=5, dpi=100):
+        self.fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = self.fig.add_subplot(111)
+        super(VulnerabilityPieChart, self).__init__(self.fig)
+        self.setParent(parent)
+
+        # Make the background match the application theme
+        self.fig.patch.set_facecolor('#1e1e1e')
+        self.axes.set_facecolor('#1e1e1e')
+
+        # Set text color to white for better visibility
+        self.axes.tick_params(colors='white')
+        for text in self.axes.texts:
+            text.set_color('white')
+
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+    def update_chart(self, severity_data):
+        self.axes.clear()
+
+        labels = []
+        sizes = []
+
+        for k, v in severity_data.items():
+            if v > 0:
+                labels.append(f"{k} ({v})")
+                sizes.append(v)
+
+        colors = ["red", "orange", "gold", "lightgreen", "gray"]
+        explode = [0.1 if l.startswith("Critical") else 0 for l in labels]
+
+        if sizes:  # Only create pie if we have data
+            self.axes.pie(
+                sizes,
+                labels=labels,
+                autopct='%1.1f%%',
+                colors=colors[:len(labels)],
+                explode=explode,
+                startangle=140,
+                textprops={'color': 'white'}
+            )
+            self.axes.set_title("Distribution of CVE Severities", color='white')
+            self.axes.axis("equal")
+
+        self.fig.tight_layout()
+        self.draw()
+
+
 # === Get News Function ===
 def get_cybersecurity_news(api_key, query='cybersecurity best practices', count=5):
     url = f'https://gnews.io/api/v4/search?q={query}&lang=en&country=us&max={count}&apikey={api_key}'
@@ -60,13 +132,14 @@ def get_cybersecurity_news(api_key, query='cybersecurity best practices', count=
         print(f"Error fetching news: {e}")
         return []
 
+
 # === Main App ===
 class App(QWidget):
     def __init__(self, api_key):
         super().__init__()
         self.api_key = api_key
         self.setWindowTitle("Cybervault")
-        #self.setGeometry(100, 100, 1000, 600)
+        # self.setGeometry(100, 100, 1000, 600)
         self.setStyleSheet("background-color: #0d0d0d; color: white;")
 
         self.main_layout = QVBoxLayout()
@@ -233,7 +306,6 @@ class App(QWidget):
 
         self.load_home_news_preview()
 
-
     def load_home_news_preview(self):
         self.home_news_list.clear()
         self.home_news_articles = get_cybersecurity_news(self.api_key)
@@ -380,7 +452,6 @@ class App(QWidget):
 
         self.scroll_layout.addStretch()
 
-
     def open_news_link(self, item):
         index = self.news_list.row(item)
         if 0 <= index < len(self.news_items):
@@ -388,14 +459,69 @@ class App(QWidget):
 
     def init_scanning_results_page(self):
         scan_widget = QWidget()
-        layout = QVBoxLayout()
+        main_layout = QVBoxLayout()
 
-        label = QLabel("Scanning Results")
-        label.setStyleSheet("""
+        # Header Section
+        header_label = QLabel("Scanning Results")
+        header_label.setStyleSheet("""
             font-size: 24px;
             font-weight: bold;
             color: #0de8f2;
         """)
+        main_layout.addWidget(header_label)
+
+        # Content Section - Split into chart and results
+        content_layout = QHBoxLayout()
+
+        # Left side - Chart
+        chart_container = QVBoxLayout()
+        chart_title = QLabel("Vulnerability Severity Distribution")
+        chart_title.setStyleSheet("""
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 10px;
+        """)
+        chart_container.addWidget(chart_title)
+
+        # Create the pie chart widget
+        self.pie_chart = VulnerabilityPieChart(width=5, height=5)
+        chart_container.addWidget(self.pie_chart)
+
+        # Right side - Text Results
+        results_container = QVBoxLayout()
+
+        severity_title = QLabel("Severity Breakdown")
+        severity_title.setStyleSheet("""
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 10px;
+        """)
+        results_container.addWidget(severity_title)
+
+        # Severity breakdown list
+        self.severity_list = QTextEdit()
+        self.severity_list.setReadOnly(True)
+        self.severity_list.setStyleSheet("""
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            padding: 10px;
+            font-size: 14px;
+            color: white;
+        """)
+        results_container.addWidget(self.severity_list)
+
+        # System details text area
+        system_info_title = QLabel("System Information")
+        system_info_title.setStyleSheet("""
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        """)
+        results_container.addWidget(system_info_title)
 
         self.result_text = QTextEdit()
         self.result_text.setReadOnly(True)
@@ -404,11 +530,18 @@ class App(QWidget):
             border: 1px solid #333;
             padding: 10px;
             font-size: 14px;
+            color: #cccccc;
         """)
+        results_container.addWidget(self.result_text)
 
-        layout.addWidget(label)
-        layout.addWidget(self.result_text)
-        scan_widget.setLayout(layout)
+        # Add chart and results to the content layout
+        content_layout.addLayout(chart_container, 1)
+        content_layout.addLayout(results_container, 1)
+
+        # Add the content layout to the main layout
+        main_layout.addLayout(content_layout)
+
+        scan_widget.setLayout(main_layout)
         self.stacked_widget.addWidget(scan_widget)
 
     def init_about_us_page(self):
@@ -442,18 +575,72 @@ class App(QWidget):
         self.stacked_widget.addWidget(about_widget)
 
     def scan(self):
+        # Get system information
         os_platform = system_info.get_OS_platform()
         os_version = system_info.get_OS_version()
         installed_programs = system_info.get_installed_programs()
         system_services = system_info.get_system_services()
 
+        # Create system information text
         result = f"Operating System: {os_platform}\n"
         result += f"OS Version: {os_version}\n\nInstalled Programs:\n"
-        result += "\n".join([f"{prog[0]} - {prog[1]}" for prog in installed_programs]) if isinstance(installed_programs, list) else str(installed_programs)
+        result += "\n".join([f"{prog[0]} - {prog[1]}" for prog in installed_programs]) if isinstance(installed_programs,
+                                                                                                     list) else str(
+            installed_programs)
         result += "\n\nSystem Services:\n"
-        result += "\n".join([f"{svc[0]} - {svc[1]} - {svc[2]}" for svc in system_services]) if isinstance(system_services, list) else str(system_services)
+        result += "\n".join([f"{svc[0]} - {svc[1]} - {svc[2]}" for svc in system_services]) if isinstance(
+            system_services, list) else str(system_services)
 
+        # Update the system info text field
         self.result_text.setText(result)
+
+        # Hardcoded severity data for now (simulating scan results)
+        severity_data = {
+            "Critical": 3,
+            "High": 7,
+            "Medium": 12,
+            "Low": 5,
+            "None": 2
+        }
+
+        # Update the pie chart
+        self.pie_chart.update_chart(severity_data)
+
+        # Format and display the severity list with colored labels
+        severity_html = "<style>table {width: 100%;} td {padding: 5px;}</style>"
+        severity_html += "<table border='0'>"
+
+        colors = {
+            "Critical": "red",
+            "High": "orange",
+            "Medium": "gold",
+            "Low": "lightgreen",
+            "None": "gray"
+        }
+
+        total_issues = sum(severity_data.values())
+        severity_html += f"<tr><td colspan='3'><b>Total Issues Found: {total_issues}</b></td></tr>"
+        severity_html += "<tr><td colspan='3'><hr></td></tr>"  # Horizontal line
+
+        for severity, count in severity_data.items():
+            if count > 0:
+                percentage = (count / total_issues) * 100
+                color_box = f"<div style='width: 15px; height: 15px; background-color: {colors[severity]}; display: inline-block; margin-right: 5px;'></div>"
+                severity_html += f"<tr><td>{color_box} {severity}</td><td>{count}</td><td>{percentage:.1f}%</td></tr>"
+
+        severity_html += "</table>"
+
+        # Add recommendations based on severity
+        if severity_data["Critical"] > 0:
+            severity_html += "<p><b>Recommendation:</b> <span style='color: red;'>Critical vulnerabilities detected! Immediate action required.</span></p>"
+        elif severity_data["High"] > 0:
+            severity_html += "<p><b>Recommendation:</b> <span style='color: orange;'>High risk vulnerabilities found. Remediation advised within 7 days.</span></p>"
+        else:
+            severity_html += "<p><b>Recommendation:</b> <span style='color: lightgreen;'>System security is in good standing. Continue regular monitoring.</span></p>"
+
+        self.severity_list.setHtml(severity_html)
+
+        # Navigate to the scanning results page
         self.show_scanning_results_page()
 
     def show_home_page(self):
@@ -467,6 +654,7 @@ class App(QWidget):
 
     def show_about_us_page(self):
         self.stacked_widget.setCurrentIndex(3)
+
 
 # === Run the App ===
 if __name__ == '__main__':
