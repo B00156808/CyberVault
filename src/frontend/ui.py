@@ -765,7 +765,7 @@ class App(QWidget):
             self.progress_bar.setValue(50)
             self.progress_label.setText("Getting installed software...")
             QApplication.processEvents()
-            programs = system_info.get_installed_programs()
+            programs = cve_checker_test.get_installed_programs()
 
             # Update progress - Analyzing
             self.progress_bar.setValue(70)
