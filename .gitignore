@@ -4,3 +4,5 @@ src/backend/cve_temp.json
 cves.db
 src/backend/cve_report.csv
 src/backend/cybervault-scan*
+src/backend/*.pdf
+src/backend/reports/*
