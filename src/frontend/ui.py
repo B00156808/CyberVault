@@ -841,7 +841,7 @@ class App(QWidget):
         self.stacked_widget.addWidget(about_widget)
 
     def scan(self):
-        """Initiate a scan and use real data from the CVE database with proper version checking"""
+        """Unified scanning function that uses the same data for both PDF and UI"""
         # Show progress bar and set initial state
         self.progress_bar.setValue(0)
         self.progress_bar.setVisible(True)
@@ -858,125 +858,156 @@ class App(QWidget):
             self.progress_label.setText("Initializing scan...")
             QApplication.processEvents()
 
+            # First, let's modify the cve_checker_test.match_installed_software function to return more data
+            # We need to store the original function
+            original_match_installed_software = cve_checker_test.match_installed_software
+
+            # Now let's create a wrapper function to capture the data we need
+            def match_with_data_collection():
+                # To store the data we collect during the scan
+                scan_data = {
+                    'grouped': {},  # Vulnerable software
+                    'severity_data': {"Critical": 0, "High": 0, "Medium": 0, "Low": 0, "None": 0, "Unknown": 0},
+                }
+
+                # Store the original insert_cve function
+                original_insert_cve = cve_checker_test.insert_cve
+
+                # Create a wrapper to track vulnerabilities as they're found
+                def insert_cve_wrapper(conn, cve_id, vendor, product, version_start, version_end, description,
+                                       published_date, cvss_score):
+                    # Call the original function
+                    result = original_insert_cve(conn, cve_id, vendor, product, version_start, version_end, description,
+                                                 published_date, cvss_score)
+
+                    # We don't need to track the database insertions, so we return the result
+                    return result
+
+                # We can't easily intercept match_installed_software's processing, so we'll use
+                # a different approach - we'll let the function run normally and then extract data from
+                # the database after it's done but before we disconnect
+
+                # Run the original function to get the PDF path
+                pdf_path = original_match_installed_software()
+
+                # Capture the data we need here
+                # Get the installed programs
+                programs = cve_checker_test.get_installed_programs()
+
+                # Open the database connection
+                conn = sqlite3.connect(cve_checker_test.DB_FILE)
+                c = conn.cursor()
+
+                # Same logic as in the original scanning function
+                from packaging.version import parse as parse_version
+
+                for name, version in programs:
+                    if not isinstance(name, str) or not isinstance(version, str):
+                        continue
+
+                    try:
+                        # Try to parse the version
+                        installed_version = parse_version(str(version))
+                    except Exception:
+                        continue
+
+                    # Try to match with broader terms for better results
+                    name_terms = name.split()
+                    if not name_terms:
+                        continue
+
+                    # Try with first word and then with multiple words for better matching
+                    search_terms = [name_terms[0]]
+                    if len(name_terms) > 1:
+                        search_terms.append(f"{name_terms[0]} {name_terms[1]}")
+
+                    # Add common software names that might be referenced differently in CVEs
+                    if "chrome" in name.lower():
+                        search_terms.append("chromium")
+                    elif "microsoft" in name.lower():
+                        for term in ["office", "excel", "word", "powerpoint", "outlook"]:
+                            if term in name.lower():
+                                search_terms.append(term)
+                    elif "adobe" in name.lower():
+                        for term in ["reader", "acrobat", "flash"]:
+                            if term in name.lower():
+                                search_terms.append(term)
+
+                    for term in search_terms:
+                        like_name = f"%{term.lower()}%"
+                        c.execute('''
+                                  SELECT id, cvss_score, version_start, version_end, description
+                                  FROM cves
+                                  WHERE product LIKE ?
+                                     OR vendor LIKE ?
+                                  ''', (like_name, like_name))
+
+                        results = c.fetchall()
+
+                        for cve_id, cvss_score, version_start, version_end, description in results:
+                            try:
+                                if version_start:
+                                    version_start = str(version_start).strip()
+                                if version_end:
+                                    version_end = str(version_end).strip()
+
+                                # Check version constraints
+                                version_match = True
+                                if version_start and version_end:
+                                    version_match = parse_version(version_start) <= installed_version <= parse_version(
+                                        version_end)
+                                elif version_start:
+                                    version_match = installed_version >= parse_version(version_start)
+                                elif version_end:
+                                    version_match = installed_version <= parse_version(version_end)
+
+                                # Only count vulnerabilities if the version actually matches
+                                if version_match:
+                                    # Add to our grouped results
+                                    if (name, version) not in scan_data['grouped']:
+                                        scan_data['grouped'][(name, version)] = []
+
+                                    scan_data['grouped'][(name, version)].append((cve_id, cvss_score, description))
+
+                                    # Count by severity
+                                    severity = classify_cvss(cvss_score)
+                                    scan_data['severity_data'][severity] += 1
+                            except Exception as e:
+                                continue
+
+                conn.close()
+
+                # Store system information
+                scan_data['os_platform'] = system_info.get_OS_platform()
+                scan_data['os_version'] = system_info.get_OS_version()
+                scan_data['programs'] = programs
+
+                # Return both the PDF path and our collected data
+                return pdf_path, scan_data
+
             # Update progress - Scanning system
             self.progress_bar.setValue(30)
             self.progress_label.setText("Scanning system for installed software...")
             QApplication.processEvents()
 
-            # Get system info
-            os_platform = system_info.get_OS_platform()
-            os_version = system_info.get_OS_version()
+            # Run our enhanced scanning function
+            pdf_path, scan_data = match_with_data_collection()
 
-            # Get installed programs
-            self.progress_bar.setValue(50)
-            self.progress_label.setText("Getting installed software...")
-            QApplication.processEvents()
-            # Use cve_checker_test's function to match the PDF report
-            programs = cve_checker_test.get_installed_programs()
-
-            # Update progress - Analyzing
-            self.progress_bar.setValue(70)
-            self.progress_label.setText("Analyzing vulnerabilities against CVE database...")
-            QApplication.processEvents()
-
-            # Run the match_installed_software function to get real data
-            # This function does the full analysis and creates the PDF report
-            pdf_path = cve_checker_test.match_installed_software()
+            # Extract data from the scan results
+            severity_data = scan_data['severity_data']
+            grouped = scan_data['grouped']
+            programs = scan_data['programs']
+            os_platform = scan_data['os_platform']
+            os_version = scan_data['os_version']
 
             # Store the PDF path for later use
             self.pdf_report_path = pdf_path
 
-            # Now use the SAME methodology as in the cve_checker_test.match_installed_software function
-            # This will ensure our UI shows consistent results with the PDF report
-            conn = sqlite3.connect(cve_checker_test.DB_FILE)
-            c = conn.cursor()
+            # Build system info text with the collected data
+            self.progress_bar.setValue(80)
+            self.progress_label.setText("Preparing results...")
+            QApplication.processEvents()
 
-            # Set up counters for vulnerabilities by severity
-            severity_data = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0, "None": 0, "Unknown": 0}
-
-            # Get grouped vulnerability data
-            grouped = {}  # This will hold our matching vulnerabilities
-
-            # Use the same approach as in match_installed_software
-
-            for name, version in programs:
-                if not isinstance(name, str) or not isinstance(version, str):
-                    continue
-
-                try:
-                    # Try to parse the version (just like in cve_checker_test)
-                    installed_version = parse_version(str(version))
-                except Exception:
-                    continue
-
-                # Try to match with broader terms for better results
-                name_terms = name.split()
-                if not name_terms:
-                    continue
-
-                # Try with first word and then with multiple words for better matching
-                search_terms = [name_terms[0]]
-                if len(name_terms) > 1:
-                    search_terms.append(f"{name_terms[0]} {name_terms[1]}")
-
-                # Add common software names that might be referenced differently in CVEs
-                # (This is from your cve_checker_test.py)
-                if "chrome" in name.lower():
-                    search_terms.append("chromium")
-                elif "microsoft" in name.lower():
-                    for term in ["office", "excel", "word", "powerpoint", "outlook"]:
-                        if term in name.lower():
-                            search_terms.append(term)
-                elif "adobe" in name.lower():
-                    for term in ["reader", "acrobat", "flash"]:
-                        if term in name.lower():
-                            search_terms.append(term)
-
-                for term in search_terms:
-                    like_name = f"%{term.lower()}%"
-                    c.execute('''
-                              SELECT id, cvss_score, version_start, version_end, description
-                              FROM cves
-                              WHERE product LIKE ?
-                                 OR vendor LIKE ?
-                              ''', (like_name, like_name))
-
-                    results = c.fetchall()
-
-                    for cve_id, cvss_score, version_start, version_end, description in results:
-                        try:
-                            if version_start:
-                                version_start = str(version_start).strip()
-                            if version_end:
-                                version_end = str(version_end).strip()
-
-                            # Check version constraints - THIS IS THE KEY PART
-                            version_match = True
-                            if version_start and version_end:
-                                version_match = parse_version(version_start) <= installed_version <= parse_version(
-                                    version_end)
-                            elif version_start:
-                                version_match = installed_version >= parse_version(version_start)
-                            elif version_end:
-                                version_match = installed_version <= parse_version(version_end)
-
-                            # Only count vulnerabilities if the version actually matches
-                            if version_match:
-                                # Add to our grouped results
-                                if (name, version) not in grouped:
-                                    grouped[(name, version)] = []
-
-                                grouped[(name, version)].append((cve_id, cvss_score))
-
-                                # Count by severity
-                                severity = classify_cvss(cvss_score)
-                                severity_data[severity] += 1
-                        except Exception:
-                            continue
-
-            conn.close()
-
-            # Build system info text with actual data
             system_info_text = f"Operating System: {os_platform}\n"
             system_info_text += f"OS Version: {os_version}\n\n"
 
@@ -1087,7 +1118,6 @@ class App(QWidget):
 
             # Show error dialog
             QMessageBox.critical(self, "Scan Error", f"An error occurred during the scan:\n\n{str(e)}")
-
     def show_home_page(self):
         self.stacked_widget.setCurrentIndex(0)
 
