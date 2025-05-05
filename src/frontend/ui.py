@@ -1,22 +1,47 @@
+import sqlite3
 import sys
 import os
 import requests
 import webbrowser
+import subprocess
+import threading
+from datetime import datetime
 from collections import Counter
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QStackedWidget, QPushButton,
     QLabel, QHBoxLayout, QListWidget, QListWidgetItem, QTextEdit, QSizePolicy, QScrollArea,
-    QFrame
+    QFrame, QProgressBar, QMessageBox
 )
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QObject
 from PyQt5.QtGui import QPixmap, QPainter, QBrush, QColor
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 # Import your custom system_info module
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../frontend')))
 import system_info
+
+# Add path to the directory containing your CVE checker script
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend')))
+import cve_checker_test  # Import the CVE checker script
+
+# Fix the database path issue by setting DB_FILE to an absolute path
+if hasattr(cve_checker_test, 'DB_FILE'):
+    # Get the filename from the original path
+    db_filename = os.path.basename(cve_checker_test.DB_FILE)
+
+    # Create an absolute path to the backend directory
+    backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend'))
+
+    # Create the full absolute path to the database
+    db_absolute_path = os.path.join(backend_dir, db_filename)
+
+    # Override the DB_FILE in the module
+    cve_checker_test.DB_FILE = db_absolute_path
+
+    print(f"Updated database path: {cve_checker_test.DB_FILE}")
+    print(f"Database exists: {os.path.exists(cve_checker_test.DB_FILE)}")
 
 API_KEY = '971cf28df41c8a5d09151bb993dd8f19'  # Your API key here
 
@@ -24,6 +49,10 @@ API_KEY = '971cf28df41c8a5d09151bb993dd8f19'  # Your API key here
 # === Helper Functions ===
 def classify_cvss(score):
     """Classify CVSS score into severity levels"""
+    if score is None:
+        return "Unknown"
+
+    score = float(score)
     if score >= 9.0:
         return "Critical"
     elif score >= 7.0:
@@ -87,12 +116,26 @@ class VulnerabilityPieChart(FigureCanvas):
         labels = []
         sizes = []
 
-        for k, v in severity_data.items():
-            if v > 0:
-                labels.append(f"{k} ({v})")
-                sizes.append(v)
+        # Define the order we want
+        severity_order = ["Critical", "High", "Medium", "Low", "None", "Unknown"]
 
-        colors = ["red", "orange", "gold", "lightgreen", "gray"]
+        # Sort data by predefined order
+        for severity in severity_order:
+            if severity in severity_data and severity_data[severity] > 0:
+                labels.append(f"{severity} ({severity_data[severity]})")
+                sizes.append(severity_data[severity])
+
+        colors = {
+            "Critical": "red",
+            "High": "orange",
+            "Medium": "gold",
+            "Low": "lightgreen",
+            "None": "gray",
+            "Unknown": "darkgray"
+        }
+
+        color_list = [colors[severity] for severity in severity_order if
+                      severity in severity_data and severity_data[severity] > 0]
         explode = [0.1 if l.startswith("Critical") else 0 for l in labels]
 
         if sizes:  # Only create pie if we have data
@@ -100,7 +143,7 @@ class VulnerabilityPieChart(FigureCanvas):
                 sizes,
                 labels=labels,
                 autopct='%1.1f%%',
-                colors=colors[:len(labels)],
+                colors=color_list,
                 explode=explode,
                 startangle=140,
                 textprops={'color': 'white'}
@@ -133,14 +176,93 @@ def get_cybersecurity_news(api_key, query='cybersecurity best practices', count=
         return []
 
 
+# === Worker for background processing ===
+class ScanWorker(QObject):
+    scan_complete = pyqtSignal(dict, str, str)
+    scan_progress = pyqtSignal(int, str)
+    scan_error = pyqtSignal(str)
+
+    def run(self):
+        try:
+            # Update progress - Initializing
+            self.scan_progress.emit(10, "Initializing scan...")
+
+            # Update progress - Downloading CVE database
+            self.scan_progress.emit(20, "Downloading CVE database...")
+
+            # Use try-except to handle potential import errors
+            try:
+                # Update progress - Scanning system
+                self.scan_progress.emit(40, "Scanning system for installed software...")
+
+                # Get installed programs
+                self.scan_progress.emit(60, "Analyzing vulnerabilities...")
+
+                # Run the match_installed_software function
+                pdf_path = cve_checker_test.match_installed_software()
+
+                # Count vulnerabilities by severity
+                severity_data = Counter()
+                system_info_text = ""
+
+                # Create summary from found information in CVE database
+                conn = sqlite3.connect(cve_checker_test.DB_FILE)
+                c = conn.cursor()
+                programs = cve_checker_test.get_installed_programs()
+
+                # Build system info text
+                system_info_text = f"Operating System: {system_info.get_OS_platform()}\n"
+                system_info_text += f"OS Version: {system_info.get_OS_version()}\n\n"
+                system_info_text += f"Total programs scanned: {len(programs)}\n\n"
+
+                # Count vulnerabilities by severity and build report
+                for name, version in programs:
+                    # Try to match with broader terms for a quick summary
+                    name_terms = name.split()
+                    if not name_terms:
+                        continue
+
+                    # Try with first word for better matching
+                    search_term = name_terms[0].lower()
+
+                    c.execute('''
+                              SELECT id, cvss_score
+                              FROM cves
+                              WHERE product LIKE ?
+                                 OR vendor LIKE ?
+                              ''', (f"%{search_term}%", f"%{search_term}%"))
+
+                    results = c.fetchall()
+
+                    # We're just doing a quick check for the UI, so we'll limit how
+                    # many results we process per program
+                    for cve_id, cvss_score in results[:10]:  # Limit to 10 per program
+                        severity = classify_cvss(cvss_score)
+                        severity_data[severity] += 1
+
+                conn.close()
+
+                # Update progress - Completing
+                self.scan_progress.emit(90, "Generating report...")
+
+                # Emit the results and PDF path
+                self.scan_complete.emit(severity_data, system_info_text, pdf_path)
+
+            except Exception as e:
+                self.scan_error.emit(f"Error during vulnerability analysis: {str(e)}")
+
+        except Exception as e:
+            self.scan_error.emit(f"An error occurred during scanning: {str(e)}")
+
+
 # === Main App ===
 class App(QWidget):
     def __init__(self, api_key):
         super().__init__()
         self.api_key = api_key
         self.setWindowTitle("Cybervault")
-        # self.setGeometry(100, 100, 1000, 600)
         self.setStyleSheet("background-color: #0d0d0d; color: white;")
+        self.pdf_report_path = None
 
         self.main_layout = QVBoxLayout()
         self.stacked_widget = QStackedWidget()
@@ -541,6 +663,44 @@ class App(QWidget):
         # Add the content layout to the main layout
         main_layout.addLayout(content_layout)
 
+        # Add PDF report link button at the bottom
+        self.report_button = QPushButton("Open Full PDF Report")
+        self.report_button.setStyleSheet("""
+            font-size: 16px;
+            color: white;
+            background-color: #007BFF;
+            border: none;
+            padding: 10px;
+            margin-top: 15px;
+        """)
+        self.report_button.clicked.connect(self.open_pdf_report)
+        self.report_button.setVisible(False)  # Hide until a report is generated
+        main_layout.addWidget(self.report_button, alignment=Qt.AlignCenter)
+
+        # Add progress bar for scan status
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setStyleSheet("""
+            QProgressBar {
+                border: 1px solid #30B2BA;
+                border-radius: 5px;
+                text-align: center;
+                background-color: #1e1e1e;
+                color: white;
+            }
+            QProgressBar::chunk {
+                background-color: #0de8f2;
+            }
+        """)
+        self.progress_bar.setVisible(False)
+        main_layout.addWidget(self.progress_bar)
+
+        # Progress status label
+        self.progress_label = QLabel()
+        self.progress_label.setStyleSheet("color: #0de8f2; font-size: 14px;")
+        self.progress_label.setAlignment(Qt.AlignCenter)
+        self.progress_label.setVisible(False)
+        main_layout.addWidget(self.progress_label)
+
         scan_widget.setLayout(main_layout)
         self.stacked_widget.addWidget(scan_widget)
 
@@ -575,73 +735,391 @@ class App(QWidget):
         self.stacked_widget.addWidget(about_widget)
 
     def scan(self):
-        # Get system information
-        os_platform = system_info.get_OS_platform()
-        os_version = system_info.get_OS_version()
-        installed_programs = system_info.get_installed_programs()
-        system_services = system_info.get_system_services()
+        """Initiate a scan and use real data from the CVE database with proper version checking"""
+        # Show progress bar and set initial state
+        self.progress_bar.setValue(0)
+        self.progress_bar.setVisible(True)
+        self.progress_label.setText("Preparing scan...")
+        self.progress_label.setVisible(True)
+        self.report_button.setVisible(False)
 
-        # Create system information text
-        result = f"Operating System: {os_platform}\n"
-        result += f"OS Version: {os_version}\n\nInstalled Programs:\n"
-        result += "\n".join([f"{prog[0]} - {prog[1]}" for prog in installed_programs]) if isinstance(installed_programs,
-                                                                                                     list) else str(
-            installed_programs)
-        result += "\n\nSystem Services:\n"
-        result += "\n".join([f"{svc[0]} - {svc[1]} - {svc[2]}" for svc in system_services]) if isinstance(
-            system_services, list) else str(system_services)
+        # Force UI update
+        QApplication.processEvents()
 
-        # Update the system info text field
-        self.result_text.setText(result)
+        try:
+            # Update progress - Initializing
+            self.progress_bar.setValue(10)
+            self.progress_label.setText("Initializing scan...")
+            QApplication.processEvents()
 
-        # Hardcoded severity data for now (simulating scan results)
-        severity_data = {
-            "Critical": 3,
-            "High": 7,
-            "Medium": 12,
-            "Low": 5,
-            "None": 2
-        }
+            # Update progress - Scanning system
+            self.progress_bar.setValue(30)
+            self.progress_label.setText("Scanning system for installed software...")
+            QApplication.processEvents()
+
+            # Get system info
+            os_platform = system_info.get_OS_platform()
+            os_version = system_info.get_OS_version()
+
+            # Get installed programs
+            self.progress_bar.setValue(50)
+            self.progress_label.setText("Getting installed software...")
+            QApplication.processEvents()
+            programs = system_info.get_installed_programs()
+
+            # Update progress - Analyzing
+            self.progress_bar.setValue(70)
+            self.progress_label.setText("Analyzing vulnerabilities against CVE database...")
+            QApplication.processEvents()
+
+            # Run the match_installed_software function to get real data
+            # This function does the full analysis and creates the PDF report
+            pdf_path = cve_checker_test.match_installed_software()
+
+            # Store the PDF path for later use
+            self.pdf_report_path = pdf_path
+
+            # Now use the SAME methodology as in the cve_checker_test.match_installed_software function
+            # This will ensure our UI shows consistent results with the PDF report
+            conn = sqlite3.connect(cve_checker_test.DB_FILE)
+            c = conn.cursor()
+
+            # Set up counters for vulnerabilities by severity
+            severity_data = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0, "None": 0, "Unknown": 0}
+
+            # Get grouped vulnerability data
+            grouped = {}  # This will hold our matching vulnerabilities
+
+            # Use the same approach as in match_installed_software
+            from packaging.version import parse as parse_version
+
+            for name, version in programs:
+                if not isinstance(name, str) or not isinstance(version, str):
+                    continue
+
+                try:
+                    # Try to parse the version (just like in cve_checker_test)
+                    installed_version = parse_version(str(version))
+                except Exception:
+                    continue
+
+                # Try to match with broader terms for better results
+                name_terms = name.split()
+                if not name_terms:
+                    continue
+
+                # Try with first word and then with multiple words for better matching
+                search_terms = [name_terms[0]]
+                if len(name_terms) > 1:
+                    search_terms.append(f"{name_terms[0]} {name_terms[1]}")
+
+                # Add common software names that might be referenced differently in CVEs
+                # (This is from your cve_checker_test.py)
+                if "chrome" in name.lower():
+                    search_terms.append("chromium")
+                elif "microsoft" in name.lower():
+                    for term in ["office", "excel", "word", "powerpoint", "outlook"]:
+                        if term in name.lower():
+                            search_terms.append(term)
+                elif "adobe" in name.lower():
+                    for term in ["reader", "acrobat", "flash"]:
+                        if term in name.lower():
+                            search_terms.append(term)
+
+                for term in search_terms:
+                    like_name = f"%{term.lower()}%"
+                    c.execute('''
+                              SELECT id, cvss_score, version_start, version_end, description
+                              FROM cves
+                              WHERE product LIKE ?
+                                 OR vendor LIKE ?
+                              ''', (like_name, like_name))
+
+                    results = c.fetchall()
+
+                    for cve_id, cvss_score, version_start, version_end, description in results:
+                        try:
+                            if version_start:
+                                version_start = str(version_start).strip()
+                            if version_end:
+                                version_end = str(version_end).strip()
+
+                            # Check version constraints - THIS IS THE KEY PART
+                            version_match = True
+                            if version_start and version_end:
+                                version_match = parse_version(version_start) <= installed_version <= parse_version(
+                                    version_end)
+                            elif version_start:
+                                version_match = installed_version >= parse_version(version_start)
+                            elif version_end:
+                                version_match = installed_version <= parse_version(version_end)
+
+                            # Only count vulnerabilities if the version actually matches
+                            if version_match:
+                                # Add to our grouped results
+                                if (name, version) not in grouped:
+                                    grouped[(name, version)] = []
+
+                                grouped[(name, version)].append((cve_id, cvss_score))
+
+                                # Count by severity
+                                severity = classify_cvss(cvss_score)
+                                severity_data[severity] += 1
+                        except Exception:
+                            continue
+
+            conn.close()
+
+            # Build system info text with actual data
+            system_info_text = f"Operating System: {os_platform}\n"
+            system_info_text += f"OS Version: {os_version}\n\n"
+
+            # Add information about vulnerable software
+            system_info_text += f"Total Programs Scanned: {len(programs)}\n"
+            system_info_text += f"Programs with Vulnerabilities: {len(grouped)}\n\n"
+
+            # Add details about vulnerable programs
+            if grouped:
+                system_info_text += "Vulnerable Programs:\n"
+                for i, ((name, version), cves) in enumerate(list(grouped.items())[:10]):  # Show first 10
+                    system_info_text += f"{i + 1}. {name} (version: {version}) - {len(cves)} vulnerabilities\n"
+
+                if len(grouped) > 10:
+                    system_info_text += f"\n...and {len(grouped) - 10} more.\n"
+            else:
+                system_info_text += "No vulnerabilities were found in your installed software.\n"
+                system_info_text += "This is good news! Keep your software updated to maintain security.\n"
+
+            # Update progress - Completing
+            self.progress_bar.setValue(90)
+            self.progress_label.setText("Generating report...")
+            QApplication.processEvents()
+
+            # Update the pie chart with real data
+            try:
+                self.pie_chart.update_chart(severity_data)
+            except Exception as e:
+                print(f"Error updating chart: {e}")
+
+            # Format and display the severity list with colored labels
+            try:
+                severity_html = "<style>table {width: 100%;} td {padding: 5px;}</style>"
+                severity_html += "<table border='0'>"
+
+                colors = {
+                    "Critical": "red",
+                    "High": "orange",
+                    "Medium": "gold",
+                    "Low": "lightgreen",
+                    "None": "gray",
+                    "Unknown": "darkgray"
+                }
+
+                total_issues = sum(severity_data.values())
+
+                if total_issues > 0:
+                    severity_html += f"<tr><td colspan='3'><b>Total Vulnerabilities Found: {total_issues}</b></td></tr>"
+                    severity_html += "<tr><td colspan='3'><hr></td></tr>"  # Horizontal line
+
+                    # Sort by severity level
+                    severity_order = ["Critical", "High", "Medium", "Low", "None", "Unknown"]
+                    for severity in severity_order:
+                        count = severity_data.get(severity, 0)
+                        if count > 0:
+                            percentage = (count / total_issues) * 100
+                            color_box = f"<div style='width: 15px; height: 15px; background-color: {colors[severity]}; display: inline-block; margin-right: 5px;'></div>"
+                            severity_html += f"<tr><td>{color_box} {severity}</td><td>{count}</td><td>{percentage:.1f}%</td></tr>"
+
+                    severity_html += "</table>"
+
+                    # Add recommendations based on severity
+                    if severity_data.get("Critical", 0) > 0:
+                        severity_html += "<p><b>Recommendation:</b> <span style='color: red;'>Critical vulnerabilities detected! Immediate action required.</span></p>"
+                    elif severity_data.get("High", 0) > 0:
+                        severity_html += "<p><b>Recommendation:</b> <span style='color: orange;'>High risk vulnerabilities found. Remediation advised within 7 days.</span></p>"
+                    else:
+                        severity_html += "<p><b>Recommendation:</b> <span style='color: lightgreen;'>System security is in good standing. Continue regular monitoring.</span></p>"
+                else:
+                    severity_html += "<tr><td colspan='3'><b>No Vulnerabilities Found</b></td></tr>"
+                    severity_html += "</table>"
+                    severity_html += "<p><b>Recommendation:</b> <span style='color: lightgreen;'>Your system appears secure. Continue regular updates and monitoring.</span></p>"
+
+                self.severity_list.setHtml(severity_html)
+
+                # Update the summary in the home page as well
+                if total_issues > 0:
+                    summary = f"Last scan results: {total_issues} vulnerabilities found\n"
+                    if severity_data.get("Critical", 0) > 0:
+                        summary += f"Critical: {severity_data.get('Critical', 0)} "
+                    if severity_data.get("High", 0) > 0:
+                        summary += f"High: {severity_data.get('High', 0)} "
+                    if severity_data.get("Medium", 0) > 0:
+                        summary += f"Medium: {severity_data.get('Medium', 0)} "
+                else:
+                    summary = "Last scan results: No vulnerabilities found. System secure!"
+
+                self.scan_results_box.setText(summary)
+
+            except Exception as e:
+                self.severity_list.setText(f"Error displaying severity data: {str(e)}")
+
+            # Set the result text
+            self.result_text.setText(system_info_text)
+
+            # Hide progress indicators
+            self.progress_bar.setVisible(False)
+            self.progress_label.setVisible(False)
+
+            # Show PDF button if we have a report
+            if pdf_path and os.path.exists(pdf_path):
+                self.report_button.setVisible(True)
+
+            # Navigate to the scanning results page
+            self.show_scanning_results_page()
+
+        except Exception as e:
+            # Handle unexpected errors
+            self.progress_bar.setVisible(False)
+            self.progress_label.setVisible(False)
+            self.result_text.setText(f"Scan Error: {str(e)}")
+            self.severity_list.setText("Scan failed. Please try again.")
+
+            # Show error dialog
+            QMessageBox.critical(self, "Scan Error", f"An error occurred during the scan:\n\n{str(e)}")
+
+    def run_scan(self):
+        """Runs the scan in a background thread"""
+        try:
+            # Create and connect worker
+            self.worker = ScanWorker()
+            self.worker.scan_progress.connect(self.update_scan_progress)
+            self.worker.scan_complete.connect(self.handle_scan_complete)
+            self.worker.scan_error.connect(self.handle_scan_error)
+
+            # Run the worker
+            self.worker.run()
+
+        except Exception as e:
+            # Handle unexpected errors
+            print(f"Scan thread error: {e}")
+            from PyQt5.QtCore import QMetaObject, Qt, Q_ARG
+            QMetaObject.invokeMethod(self, "handle_scan_error",
+                                     Qt.QueuedConnection,
+                                     Q_ARG(str, f"Thread error: {str(e)}"))
+
+    def update_scan_progress(self, value, message):
+        """Update the progress bar and status message"""
+        self.progress_bar.setValue(value)
+        self.progress_label.setText(message)
+
+    def handle_scan_complete(self, severity_data, system_info_text, pdf_path):
+        """Process the scan results and update the UI"""
+        # Store the PDF path for later use
+        self.pdf_report_path = pdf_path
+
+        # Hide progress indicators
+        self.progress_bar.setVisible(False)
+        self.progress_label.setVisible(False)
+
+        # Show PDF button if we have a report
+        if pdf_path:
+            self.report_button.setVisible(True)
 
         # Update the pie chart
-        self.pie_chart.update_chart(severity_data)
+        try:
+            self.pie_chart.update_chart(severity_data)
+        except Exception as e:
+            print(f"Error updating chart: {e}")
+
+        # Update system info text
+        self.result_text.setText(system_info_text)
 
         # Format and display the severity list with colored labels
-        severity_html = "<style>table {width: 100%;} td {padding: 5px;}</style>"
-        severity_html += "<table border='0'>"
+        try:
+            severity_html = "<style>table {width: 100%;} td {padding: 5px;}</style>"
+            severity_html += "<table border='0'>"
 
-        colors = {
-            "Critical": "red",
-            "High": "orange",
-            "Medium": "gold",
-            "Low": "lightgreen",
-            "None": "gray"
-        }
+            colors = {
+                "Critical": "red",
+                "High": "orange",
+                "Medium": "gold",
+                "Low": "lightgreen",
+                "None": "gray",
+                "Unknown": "darkgray"
+            }
 
-        total_issues = sum(severity_data.values())
-        severity_html += f"<tr><td colspan='3'><b>Total Issues Found: {total_issues}</b></td></tr>"
-        severity_html += "<tr><td colspan='3'><hr></td></tr>"  # Horizontal line
+            total_issues = sum(severity_data.values())
+            severity_html += f"<tr><td colspan='3'><b>Total Issues Found: {total_issues}</b></td></tr>"
+            severity_html += "<tr><td colspan='3'><hr></td></tr>"  # Horizontal line
 
-        for severity, count in severity_data.items():
-            if count > 0:
-                percentage = (count / total_issues) * 100
-                color_box = f"<div style='width: 15px; height: 15px; background-color: {colors[severity]}; display: inline-block; margin-right: 5px;'></div>"
-                severity_html += f"<tr><td>{color_box} {severity}</td><td>{count}</td><td>{percentage:.1f}%</td></tr>"
+            # Sort by severity level
+            severity_order = ["Critical", "High", "Medium", "Low", "None", "Unknown"]
+            for severity in severity_order:
+                count = severity_data.get(severity, 0)
+                if count > 0:
+                    percentage = (count / total_issues) * 100
+                    color_box = f"<div style='width: 15px; height: 15px; background-color: {colors[severity]}; display: inline-block; margin-right: 5px;'></div>"
+                    severity_html += f"<tr><td>{color_box} {severity}</td><td>{count}</td><td>{percentage:.1f}%</td></tr>"
 
-        severity_html += "</table>"
+            severity_html += "</table>"
 
-        # Add recommendations based on severity
-        if severity_data["Critical"] > 0:
-            severity_html += "<p><b>Recommendation:</b> <span style='color: red;'>Critical vulnerabilities detected! Immediate action required.</span></p>"
-        elif severity_data["High"] > 0:
-            severity_html += "<p><b>Recommendation:</b> <span style='color: orange;'>High risk vulnerabilities found. Remediation advised within 7 days.</span></p>"
-        else:
-            severity_html += "<p><b>Recommendation:</b> <span style='color: lightgreen;'>System security is in good standing. Continue regular monitoring.</span></p>"
+            # Add recommendations based on severity
+            if severity_data.get("Critical", 0) > 0:
+                severity_html += "<p><b>Recommendation:</b> <span style='color: red;'>Critical vulnerabilities detected! Immediate action required.</span></p>"
+            elif severity_data.get("High", 0) > 0:
+                severity_html += "<p><b>Recommendation:</b> <span style='color: orange;'>High risk vulnerabilities found. Remediation advised within 7 days.</span></p>"
+            else:
+                severity_html += "<p><b>Recommendation:</b> <span style='color: lightgreen;'>System security is in good standing. Continue regular monitoring.</span></p>"
 
-        self.severity_list.setHtml(severity_html)
+            self.severity_list.setHtml(severity_html)
+
+            # Update the summary in the home page as well
+            summary = f"Last scan results: {total_issues} vulnerabilities found\n"
+            if severity_data.get("Critical", 0) > 0:
+                summary += f"Critical: {severity_data.get('Critical', 0)} "
+            if severity_data.get("High", 0) > 0:
+                summary += f"High: {severity_data.get('High', 0)} "
+            if severity_data.get("Medium", 0) > 0:
+                summary += f"Medium: {severity_data.get('Medium', 0)} "
+
+            self.scan_results_box.setText(summary)
+
+        except Exception as e:
+            self.severity_list.setText(f"Error displaying severity data: {str(e)}")
 
         # Navigate to the scanning results page
         self.show_scanning_results_page()
+
+    def handle_scan_error(self, error_message):
+        """Handle errors during the scan process"""
+        # Hide progress indicators
+        self.progress_bar.setVisible(False)
+        self.progress_label.setVisible(False)
+
+        # Show error message
+        self.result_text.setText(f"Scan Error: {error_message}")
+        self.severity_list.setText("Scan failed. Please try again.")
+
+        # Show error dialog
+        QMessageBox.critical(self, "Scan Error", f"An error occurred during the scan:\n\n{error_message}")
+
+    def open_pdf_report(self):
+        """Open the PDF report if it exists"""
+        if self.pdf_report_path and os.path.exists(self.pdf_report_path):
+            try:
+                # Use the default system PDF viewer to open the report
+                if sys.platform == "win32":
+                    os.startfile(self.pdf_report_path)
+                elif sys.platform == "darwin":  # macOS
+                    subprocess.run(["open", self.pdf_report_path])
+                else:  # Linux
+                    subprocess.run(["xdg-open", self.pdf_report_path])
+            except Exception as e:
+                QMessageBox.warning(self, "Error Opening Report",
+                                    f"Could not open the PDF report:\n\n{str(e)}")
+        else:
+            QMessageBox.information(self, "Report Not Available",
+                                    "No PDF report is available. Please run a scan first.")
 
     def show_home_page(self):
         self.stacked_widget.setCurrentIndex(0)
@@ -660,6 +1138,6 @@ class App(QWidget):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = App(API_KEY)
-    window.resize(1920, 1080)
+    window.resize(1200, 800)
     window.show()  # Must be shown first
     sys.exit(app.exec_())

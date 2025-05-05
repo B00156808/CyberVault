@@ -677,7 +677,7 @@ def main():
     print("===============================")
     
     # Check if database exists, if not download it
-    download_cve_database()
+    #download_cve_database()
     
     # Scan system and generate report
     match_installed_software()
