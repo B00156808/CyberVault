@@ -1,12 +1,11 @@
-import sqlite3
 import sys
 import os
 import requests
 import webbrowser
 import subprocess
-import threading
-from datetime import datetime
 from collections import Counter
+from datetime import datetime
+import re
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QStackedWidget, QPushButton,
     QLabel, QHBoxLayout, QListWidget, QListWidgetItem, QTextEdit, QSizePolicy, QScrollArea,
@@ -17,16 +16,19 @@ from PyQt5.QtGui import QPixmap, QPainter, QBrush, QColor
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+import sqlite3
+import threading
+from packaging.version import parse as parse_version
 
 # Import your custom system_info module
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../frontend')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend')))
 import system_info
 
 # Add path to the directory containing your CVE checker script
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend')))
 import cve_checker_test  # Import the CVE checker script
 
-# Fix the database path issue by setting DB_FILE to an absolute path
+# Fix the database path issue by setting the DB_FILE to an absolute path
 if hasattr(cve_checker_test, 'DB_FILE'):
     # Get the filename from the original path
     db_filename = os.path.basename(cve_checker_test.DB_FILE)
@@ -34,7 +36,7 @@ if hasattr(cve_checker_test, 'DB_FILE'):
     # Create an absolute path to the backend directory
     backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend'))
 
-    # Create the full absolute path to the database
+    # Create the full absolute path to the database file
     db_absolute_path = os.path.join(backend_dir, db_filename)
 
     # Override the DB_FILE in the module
@@ -182,78 +184,6 @@ class ScanWorker(QObject):
     scan_progress = pyqtSignal(int, str)
     scan_error = pyqtSignal(str)
 
-    def run(self):
-        try:
-            # Update progress - Initializing
-            self.scan_progress.emit(10, "Initializing scan...")
-
-            # Update progress - Downloading CVE database
-            self.scan_progress.emit(20, "Downloading CVE database...")
-
-            # Use try-except to handle potential import errors
-            try:
-                # Update progress - Scanning system
-                self.scan_progress.emit(40, "Scanning system for installed software...")
-
-                # Get installed programs
-                self.scan_progress.emit(60, "Analyzing vulnerabilities...")
-
-                # Run the match_installed_software function
-                pdf_path = cve_checker_test.match_installed_software()
-
-                # Count vulnerabilities by severity
-                severity_data = Counter()
-                system_info_text = ""
-
-                # Create summary from found information in CVE database
-                conn = sqlite3.connect(cve_checker_test.DB_FILE)
-                c = conn.cursor()
-                programs = cve_checker_test.get_installed_programs()
-
-                # Build system info text
-                system_info_text = f"Operating System: {system_info.get_OS_platform()}\n"
-                system_info_text += f"OS Version: {system_info.get_OS_version()}\n\n"
-                system_info_text += f"Total programs scanned: {len(programs)}\n\n"
-
-                # Count vulnerabilities by severity and build report
-                for name, version in programs:
-                    # Try to match with broader terms for a quick summary
-                    name_terms = name.split()
-                    if not name_terms:
-                        continue
-
-                    # Try with first word for better matching
-                    search_term = name_terms[0].lower()
-
-                    c.execute('''
-                              SELECT id, cvss_score
-                              FROM cves
-                              WHERE product LIKE ?
-                                 OR vendor LIKE ?
-                              ''', (f"%{search_term}%", f"%{search_term}%"))
-
-                    results = c.fetchall()
-
-                    # We're just doing a quick check for the UI, so we'll limit how
-                    # many results we process per program
-                    for cve_id, cvss_score in results[:10]:  # Limit to 10 per program
-                        severity = classify_cvss(cvss_score)
-                        severity_data[severity] += 1
-
-                conn.close()
-
-                # Update progress - Completing
-                self.scan_progress.emit(90, "Generating report...")
-
-                # Emit the results and PDF path
-                self.scan_complete.emit(severity_data, system_info_text, pdf_path)
-
-            except Exception as e:
-                self.scan_error.emit(f"Error during vulnerability analysis: {str(e)}")
-
-        except Exception as e:
-            self.scan_error.emit(f"An error occurred during scanning: {str(e)}")
-
 
 # === Main App ===
 class App(QWidget):
@@ -263,6 +193,7 @@ class App(QWidget):
         self.setWindowTitle("Cybervault")
         self.setStyleSheet("background-color: #0d0d0d; color: white;")
         self.pdf_report_path = None
+        self.available_reports = []
 
         self.main_layout = QVBoxLayout()
         self.stacked_widget = QStackedWidget()
@@ -343,6 +274,113 @@ class App(QWidget):
         button.clicked.connect(callback)
         return button
 
+    def get_available_reports(self):
+        """Get a list of all available reports with timestamps"""
+        # Use the frontend/reports path directly
+        output_dir = os.path.join(os.path.dirname(__file__), 'reports')
+        print(f"Looking for reports in: {output_dir}")
+
+        # List to store reports with their timestamps
+        reports = []
+
+        try:
+            # Make sure the directory exists
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+                print(f"Created reports directory: {output_dir}")
+
+            # Find all PDF files in the reports directory
+            for file in os.listdir(output_dir):
+                if file.lower().endswith('.pdf'):
+                    file_path = os.path.join(output_dir, file)
+                    # Extract timestamp from filename
+                    timestamp_match = re.search(r'cybervault-report-(\d{8})_(\d{6})\.pdf', file)
+                    if timestamp_match:
+                        date_str, time_str = timestamp_match.groups()
+                        # Format: YYYYMMDD to YYYY-MM-DD
+                        formatted_date = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+                        # Format: HHMMSS to HH:MM:SS
+                        formatted_time = f"{time_str[:2]}:{time_str[2:4]}:{time_str[4:6]}"
+                        timestamp = f"{formatted_date} {formatted_time}"
+                    else:
+                        # If can't extract from filename, use file modification time
+                        mod_time = datetime.fromtimestamp(os.path.getmtime(file_path))
+                        timestamp = mod_time.strftime("%Y-%m-%d %H:%M:%S")
+
+                    reports.append({
+                        'path': file_path,
+                        'filename': file,
+                        'timestamp': timestamp
+                    })
+                    print(f"Found report: {file}")
+        except Exception as e:
+            print(f"Error getting reports: {e}")
+
+        # Sort by timestamp (newest first)
+        reports.sort(key=lambda x: x['timestamp'], reverse=True)
+        return reports
+
+    def update_reports_list(self):
+        """Update the scan_results_box to show available reports"""
+        # Get all available reports
+        reports = self.get_available_reports()
+
+        # Format the reports list as text
+        if reports:
+            text = "Available Reports (double-click to open):\n\n"
+            for i, report in enumerate(reports):
+                text += f"{i + 1}. Report from {report['timestamp']}\n"
+
+            # Set the new text
+            self.scan_results_box.setText(text)
+
+            # Store report paths for retrieval
+            self.available_reports = reports
+        else:
+            self.scan_results_box.setText("No reports available yet.")
+
+    def scan_results_box_clicked(self, event):
+        """Handle double-clicks in the scan results box"""
+        # Get the cursor position at the click location
+        cursor = self.scan_results_box.cursorForPosition(event.pos())
+
+        # Get the line number at the cursor position
+        line_number = cursor.blockNumber()
+
+        # Get all lines of text
+        text = self.scan_results_box.toPlainText().split('\n')
+
+        # Check if this is a report line (starts with a number followed by a dot)
+        if line_number < len(text):
+            line = text[line_number]
+            # Check if the line is a report line (numbered list item)
+            match = re.match(r'(\d+)\.\s', line)
+            if match and hasattr(self, 'available_reports'):
+                # Get the report index (1-based in display, 0-based in list)
+                report_index = int(match.group(1)) - 1
+                if 0 <= report_index < len(self.available_reports):
+                    # Open the report
+                    file_path = self.available_reports[report_index]['path']
+                    self.open_report_file(file_path)
+
+    def open_report_file(self, file_path):
+        """Open a report file"""
+        if file_path and os.path.exists(file_path):
+            try:
+                # Use the default system PDF viewer to open the report
+                if sys.platform == "win32":
+                    os.startfile(file_path)
+                elif sys.platform == "darwin":  # macOS
+                    subprocess.run(["open", file_path])
+                else:  # Linux
+                    subprocess.run(["xdg-open", file_path])
+            except Exception as e:
+                QMessageBox.warning(self, "Error Opening Report",
+                                    f"Could not open the report:\n\n{str(e)}")
+        else:
+            QMessageBox.information(self, "Report Not Available",
+                                    "The report file could not be found.")
+
     def init_home_page(self):
         home_widget = QWidget()
         home_layout = QHBoxLayout()
@@ -380,10 +418,10 @@ class App(QWidget):
         # Top: News list (takes 3/4 of space)
         left_container.addWidget(self.home_news_list, stretch=3)
 
-        # Bottom: Scan results viewer (1/4 of space)
+        # Bottom: Scan results viewer (1/4 of space) - Now used for PDF reports
         self.scan_results_box = QTextEdit()
         self.scan_results_box.setReadOnly(True)
-        self.scan_results_box.setPlaceholderText("No scan results yet.")
+        self.scan_results_box.setPlaceholderText("No reports available yet.")
         self.scan_results_box.setStyleSheet("""
             background-color: #1e1e1e;
             color: #0de8f2;
@@ -391,6 +429,9 @@ class App(QWidget):
             border: 1px solid #333;
             padding: 5px;
         """)
+        # Set up double-click handling for scan results box
+        self.scan_results_box.mouseDoubleClickEvent = self.scan_results_box_clicked
+
         left_container.addWidget(self.scan_results_box, stretch=1)
 
         left_layout.addLayout(left_container)
@@ -427,6 +468,8 @@ class App(QWidget):
         self.stacked_widget.addWidget(home_widget)
 
         self.load_home_news_preview()
+        # Update the reports list when the application starts
+        self.update_reports_list()
 
     def load_home_news_preview(self):
         self.home_news_list.clear()
@@ -583,14 +626,28 @@ class App(QWidget):
         scan_widget = QWidget()
         main_layout = QVBoxLayout()
 
-        # Header Section
+        # Header Section with timestamp
+        header_layout = QHBoxLayout()
+
         header_label = QLabel("Scanning Results")
         header_label.setStyleSheet("""
             font-size: 24px;
             font-weight: bold;
             color: #0de8f2;
         """)
-        main_layout.addWidget(header_label)
+        header_layout.addWidget(header_label)
+
+        # Add timestamp label (will be populated during scan)
+        self.timestamp_label = QLabel("")
+        self.timestamp_label.setStyleSheet("""
+            font-size: 14px;
+            color: #aaaaaa;
+            padding-left: 20px;
+        """)
+        self.timestamp_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        header_layout.addWidget(self.timestamp_label)
+
+        main_layout.addLayout(header_layout)
 
         # Content Section - Split into chart and results
         content_layout = QHBoxLayout()
@@ -663,8 +720,8 @@ class App(QWidget):
         # Add the content layout to the main layout
         main_layout.addLayout(content_layout)
 
-        # Add PDF report link button at the bottom
-        self.report_button = QPushButton("Open Full PDF Report")
+        # Add PDF report button at the bottom
+        self.report_button = QPushButton("Open PDF Report")
         self.report_button.setStyleSheet("""
             font-size: 16px;
             color: white;
@@ -703,6 +760,55 @@ class App(QWidget):
 
         scan_widget.setLayout(main_layout)
         self.stacked_widget.addWidget(scan_widget)
+
+    def open_pdf_report(self):
+        """Open the PDF report if it exists"""
+        if not hasattr(self, 'pdf_report_path') or not self.pdf_report_path:
+            # Try to find the most recent report
+            output_dir = getattr(cve_checker_test, 'OUTPUT_DIR', 'reports')
+
+            # Ensure the path is absolute
+            if not os.path.isabs(output_dir):
+                backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend'))
+                output_dir = os.path.join(backend_dir, output_dir)
+
+            # Look for any PDF files
+            pdf_files = []
+            try:
+                for file in os.listdir(output_dir):
+                    if file.lower().endswith('.pdf') and file.startswith("cybervault-report-"):
+                        pdf_files.append(os.path.join(output_dir, file))
+            except Exception as e:
+                print(f"Error listing reports directory: {e}")
+
+            # Sort by modification time (newest first)
+            if pdf_files:
+                pdf_files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+                self.pdf_report_path = pdf_files[0]
+            else:
+                QMessageBox.information(self, "Report Not Available",
+                                        "No PDF reports were found. Please run a scan first.")
+                return
+
+        # Now we have a report path, try to open it
+        if os.path.exists(self.pdf_report_path):
+            try:
+                print(f"Opening PDF report: {self.pdf_report_path}")
+
+                # Use the default system PDF viewer to open the report
+                if sys.platform == "win32":
+                    os.startfile(self.pdf_report_path)
+                elif sys.platform == "darwin":  # macOS
+                    subprocess.run(["open", self.pdf_report_path])
+                else:  # Linux
+                    subprocess.run(["xdg-open", self.pdf_report_path])
+
+            except Exception as e:
+                QMessageBox.warning(self, "Error Opening Report",
+                                    f"Could not open the PDF report:\n\n{str(e)}")
+        else:
+            QMessageBox.information(self, "Report Not Available",
+                                    "The PDF report file doesn't exist. Please run a scan first.")
 
     def init_about_us_page(self):
         about_widget = QWidget()
@@ -765,6 +871,7 @@ class App(QWidget):
             self.progress_bar.setValue(50)
             self.progress_label.setText("Getting installed software...")
             QApplication.processEvents()
+            # Use cve_checker_test's function to match the PDF report
             programs = cve_checker_test.get_installed_programs()
 
             # Update progress - Analyzing
@@ -791,7 +898,6 @@ class App(QWidget):
             grouped = {}  # This will hold our matching vulnerabilities
 
             # Use the same approach as in match_installed_software
-            from packaging.version import parse as parse_version
 
             for name, version in programs:
                 if not isinstance(name, str) or not isinstance(version, str):
@@ -895,6 +1001,10 @@ class App(QWidget):
             self.progress_label.setText("Generating report...")
             QApplication.processEvents()
 
+            # Add timestamp
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            self.timestamp_label.setText(f"Scan completed: {current_time}")
+
             # Update the pie chart with real data
             try:
                 self.pie_chart.update_chart(severity_data)
@@ -946,20 +1056,6 @@ class App(QWidget):
 
                 self.severity_list.setHtml(severity_html)
 
-                # Update the summary in the home page as well
-                if total_issues > 0:
-                    summary = f"Last scan results: {total_issues} vulnerabilities found\n"
-                    if severity_data.get("Critical", 0) > 0:
-                        summary += f"Critical: {severity_data.get('Critical', 0)} "
-                    if severity_data.get("High", 0) > 0:
-                        summary += f"High: {severity_data.get('High', 0)} "
-                    if severity_data.get("Medium", 0) > 0:
-                        summary += f"Medium: {severity_data.get('Medium', 0)} "
-                else:
-                    summary = "Last scan results: No vulnerabilities found. System secure!"
-
-                self.scan_results_box.setText(summary)
-
             except Exception as e:
                 self.severity_list.setText(f"Error displaying severity data: {str(e)}")
 
@@ -973,6 +1069,11 @@ class App(QWidget):
             # Show PDF button if we have a report
             if pdf_path and os.path.exists(pdf_path):
                 self.report_button.setVisible(True)
+                # Log the path for debugging
+                print(f"PDF report available at: {pdf_path}")
+
+            # Update the reports list to include the new report
+            self.update_reports_list()
 
             # Navigate to the scanning results page
             self.show_scanning_results_page()
@@ -986,140 +1087,6 @@ class App(QWidget):
 
             # Show error dialog
             QMessageBox.critical(self, "Scan Error", f"An error occurred during the scan:\n\n{str(e)}")
-
-    def run_scan(self):
-        """Runs the scan in a background thread"""
-        try:
-            # Create and connect worker
-            self.worker = ScanWorker()
-            self.worker.scan_progress.connect(self.update_scan_progress)
-            self.worker.scan_complete.connect(self.handle_scan_complete)
-            self.worker.scan_error.connect(self.handle_scan_error)
-
-            # Run the worker
-            self.worker.run()
-
-        except Exception as e:
-            # Handle unexpected errors
-            print(f"Scan thread error: {e}")
-            from PyQt5.QtCore import QMetaObject, Qt, Q_ARG
-            QMetaObject.invokeMethod(self, "handle_scan_error",
-                                     Qt.QueuedConnection,
-                                     Q_ARG(str, f"Thread error: {str(e)}"))
-
-    def update_scan_progress(self, value, message):
-        """Update the progress bar and status message"""
-        self.progress_bar.setValue(value)
-        self.progress_label.setText(message)
-
-    def handle_scan_complete(self, severity_data, system_info_text, pdf_path):
-        """Process the scan results and update the UI"""
-        # Store the PDF path for later use
-        self.pdf_report_path = pdf_path
-
-        # Hide progress indicators
-        self.progress_bar.setVisible(False)
-        self.progress_label.setVisible(False)
-
-        # Show PDF button if we have a report
-        if pdf_path:
-            self.report_button.setVisible(True)
-
-        # Update the pie chart
-        try:
-            self.pie_chart.update_chart(severity_data)
-        except Exception as e:
-            print(f"Error updating chart: {e}")
-
-        # Update system info text
-        self.result_text.setText(system_info_text)
-
-        # Format and display the severity list with colored labels
-        try:
-            severity_html = "<style>table {width: 100%;} td {padding: 5px;}</style>"
-            severity_html += "<table border='0'>"
-
-            colors = {
-                "Critical": "red",
-                "High": "orange",
-                "Medium": "gold",
-                "Low": "lightgreen",
-                "None": "gray",
-                "Unknown": "darkgray"
-            }
-
-            total_issues = sum(severity_data.values())
-            severity_html += f"<tr><td colspan='3'><b>Total Issues Found: {total_issues}</b></td></tr>"
-            severity_html += "<tr><td colspan='3'><hr></td></tr>"  # Horizontal line
-
-            # Sort by severity level
-            severity_order = ["Critical", "High", "Medium", "Low", "None", "Unknown"]
-            for severity in severity_order:
-                count = severity_data.get(severity, 0)
-                if count > 0:
-                    percentage = (count / total_issues) * 100
-                    color_box = f"<div style='width: 15px; height: 15px; background-color: {colors[severity]}; display: inline-block; margin-right: 5px;'></div>"
-                    severity_html += f"<tr><td>{color_box} {severity}</td><td>{count}</td><td>{percentage:.1f}%</td></tr>"
-
-            severity_html += "</table>"
-
-            # Add recommendations based on severity
-            if severity_data.get("Critical", 0) > 0:
-                severity_html += "<p><b>Recommendation:</b> <span style='color: red;'>Critical vulnerabilities detected! Immediate action required.</span></p>"
-            elif severity_data.get("High", 0) > 0:
-                severity_html += "<p><b>Recommendation:</b> <span style='color: orange;'>High risk vulnerabilities found. Remediation advised within 7 days.</span></p>"
-            else:
-                severity_html += "<p><b>Recommendation:</b> <span style='color: lightgreen;'>System security is in good standing. Continue regular monitoring.</span></p>"
-
-            self.severity_list.setHtml(severity_html)
-
-            # Update the summary in the home page as well
-            summary = f"Last scan results: {total_issues} vulnerabilities found\n"
-            if severity_data.get("Critical", 0) > 0:
-                summary += f"Critical: {severity_data.get('Critical', 0)} "
-            if severity_data.get("High", 0) > 0:
-                summary += f"High: {severity_data.get('High', 0)} "
-            if severity_data.get("Medium", 0) > 0:
-                summary += f"Medium: {severity_data.get('Medium', 0)} "
-
-            self.scan_results_box.setText(summary)
-
-        except Exception as e:
-            self.severity_list.setText(f"Error displaying severity data: {str(e)}")
-
-        # Navigate to the scanning results page
-        self.show_scanning_results_page()
-
-    def handle_scan_error(self, error_message):
-        """Handle errors during the scan process"""
-        # Hide progress indicators
-        self.progress_bar.setVisible(False)
-        self.progress_label.setVisible(False)
-
-        # Show error message
-        self.result_text.setText(f"Scan Error: {error_message}")
-        self.severity_list.setText("Scan failed. Please try again.")
-
-        # Show error dialog
-        QMessageBox.critical(self, "Scan Error", f"An error occurred during the scan:\n\n{error_message}")
-
-    def open_pdf_report(self):
-        """Open the PDF report if it exists"""
-        if self.pdf_report_path and os.path.exists(self.pdf_report_path):
-            try:
-                # Use the default system PDF viewer to open the report
-                if sys.platform == "win32":
-                    os.startfile(self.pdf_report_path)
-                elif sys.platform == "darwin":  # macOS
-                    subprocess.run(["open", self.pdf_report_path])
-                else:  # Linux
-                    subprocess.run(["xdg-open", self.pdf_report_path])
-            except Exception as e:
-                QMessageBox.warning(self, "Error Opening Report",
-                                    f"Could not open the PDF report:\n\n{str(e)}")
-        else:
-            QMessageBox.information(self, "Report Not Available",
-                                    "No PDF report is available. Please run a scan first.")
 
     def show_home_page(self):
         self.stacked_widget.setCurrentIndex(0)
