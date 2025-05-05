@@ -1,4 +1,4 @@
-src/backend/cves.db
+src/backend/*.db
 src/backend/all_cves.json
 src/backend/cve_temp.json
 cves.db
