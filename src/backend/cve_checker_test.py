@@ -1,6 +1,4 @@
 import os
-import json
-import gzip
 import sqlite3
 import requests
 import winreg
@@ -27,11 +25,11 @@ YEARS = list(range(2002, datetime.now().year + 1))
 MODIFIED_FEED = "nvdcve-1.1-modified.json.gz"
 OUTPUT_DIR = "reports"
 
-# Ensure report directory exists
+# ensure report directory exists
 if not os.path.exists(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR)
 
-# Severity classification constants
+# severity classification constants
 SEVERITY_CLASSES = {
     "Critical": {"min": 9.0, "color": colors.red, "action": "Update immediately or uninstall"},
     "High": {"min": 7.0, "color": colors.orangered, "action": "Update as soon as possible"},
@@ -41,7 +39,7 @@ SEVERITY_CLASSES = {
     "Unknown": {"min": None, "color": colors.grey, "action": "Review when more information becomes available"}
 }
 
-# Same colors as string values for matplotlib
+# same colors as strings for matplotlib
 SEVERITY_COLORS = {
     "Critical": "red",
     "High": "orangered",
@@ -50,104 +48,6 @@ SEVERITY_COLORS = {
     "None": "lightgrey",
     "Unknown": "grey"
 }
-
-
-def create_db():
-    """Create SQLite database for storing CVE information."""
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS cves (
-            id TEXT PRIMARY KEY,
-            vendor TEXT,
-            product TEXT,
-            version_start TEXT,
-            version_end TEXT,
-            description TEXT,
-            published_date TEXT,
-            cvss_score REAL
-        )
-    ''')
-    conn.commit()
-    conn.close()
-    print(f"Database initialized: {DB_FILE}")
-
-
-def parse_cpe(cpe_uri):
-    """Parse CPE URI to extract vendor, product, and version information."""
-    parts = cpe_uri.split(":")
-    if len(parts) >= 6:
-        vendor = parts[3].lower()
-        product = parts[4].lower()
-        version = parts[5].lower()
-        return vendor, product, version
-    return None, None, None
-
-
-def insert_cve(conn, cve_id, vendor, product, version_start, version_end, description, published_date, cvss_score):
-    """Insert CVE data into the database."""
-    c = conn.cursor()
-    try:
-        c.execute('''
-            INSERT OR IGNORE INTO cves 
-            (id, vendor, product, version_start, version_end, description, published_date, cvss_score)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (cve_id, vendor, product, version_start, version_end, description, published_date, cvss_score))
-    except Exception as e:
-        print(f"Insert failed for {cve_id}: {e}")
-    conn.commit()
-
-
-def process_feed(feed_name, conn):
-    """Download and process a CVE feed from NVD."""
-    url = f"{BASE_URL}{feed_name}"
-    print(f"Downloading: {url}")
-    
-    try:
-        r = requests.get(url, timeout=60)
-        r.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        print(f"Download failed: {e}")
-        return
-
-    try:
-        data = json.loads(gzip.decompress(r.content))
-    except Exception as e:
-        print(f"Failed to parse feed: {e}")
-        return
-        
-    total_items = len(data.get("CVE_Items", []))
-    print(f"Processing {total_items} CVE items...")
-    
-    for i, item in enumerate(data.get("CVE_Items", [])):
-        if i % 1000 == 0 and i > 0:
-            print(f"Processed {i}/{total_items} items...")
-            
-        try:
-            cve_id = item["cve"]["CVE_data_meta"]["ID"]
-            description = item["cve"]["description"]["description_data"][0]["value"]
-            published_date = item["publishedDate"]
-
-            impact = item.get("impact", {})
-            cvss_score = None
-            if "baseMetricV3" in impact:
-                cvss_score = impact["baseMetricV3"]["cvssV3"]["baseScore"]
-            elif "baseMetricV2" in impact:
-                cvss_score = impact["baseMetricV2"]["cvssV2"]["baseScore"]
-
-            nodes = item.get("configurations", {}).get("nodes", [])
-            for node in nodes:
-                cpe_matches = node.get("cpe_match", [])
-                for cpe in cpe_matches:
-                    cpe_uri = cpe.get("cpe23Uri")
-                    vendor, product, version = parse_cpe(cpe_uri)
-                    version_start = cpe.get("versionStartIncluding") or cpe.get("versionStartExcluding")
-                    version_end = cpe.get("versionEndIncluding") or cpe.get("versionEndExcluding")
-                    if vendor and product:
-                        insert_cve(conn, cve_id, vendor, product, version_start, version_end, description, published_date, cvss_score)
-        except Exception as e:
-            print(f"Error processing CVE item: {e}")
-            continue
 
 
 def download_cve_database():
@@ -196,17 +96,17 @@ def get_installed_programs():
             except FileNotFoundError:
                 continue
     
-    # Add common system software that might not be in registry
-    # Windows version
+    # add common system software that might not be in registry
+    # windows version
     try:
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion") as key:
             win_version = winreg.QueryValueEx(key, "CurrentBuildNumber")[0]
             display_version = winreg.QueryValueEx(key, "DisplayVersion")[0]
             programs.append((f"windows {display_version}", win_version))
     except Exception:
-        pass  # Ignore if we can't get Windows version
+        pass  # ignore if cant get windows version
     
-    # Microsoft Edge - check a common path
+    # microsoft edge - check common path
     try:
         from subprocess import check_output, PIPE, STDOUT
         edge_version = check_output(
@@ -217,14 +117,14 @@ def get_installed_programs():
         if edge_version:
             programs.append(("microsoft edge", edge_version))
     except Exception:
-        pass  # Ignore if we can't get Edge version
+        pass  # ignore if we cant get edge version
     
     print(f"Found {len(programs)} installed programs.")
     return programs
 
 
+# classify CVSS score into severity categories
 def classify_cvss(score):
-    """Classify CVSS score into severity categories."""
     if score is None:
         return "Unknown"
     
@@ -240,17 +140,17 @@ def classify_cvss(score):
     return "Unknown"
 
 
+# create a pie chart image of CVE severities
 def create_severity_pie_chart(severity_totals):
-    """Create a pie chart image of CVE severities."""
     plt.figure(figsize=(8, 6))
     
-    # Prepare data
+    # prepare data
     labels = []
     sizes = []
     colors = []
     explode = []
     
-    # Define matplotlib-compatible colors
+    # define matplotlib compatible colors
     matplotlib_colors = {
         "Critical": "red",
         "High": "orangered",
@@ -260,7 +160,7 @@ def create_severity_pie_chart(severity_totals):
         "Unknown": "grey"
     }
     
-    # Sort by severity (Critical first)
+    # sort by severity 
     priority_order = ["Critical", "High", "Medium", "Low", "None", "Unknown"]
     for severity in priority_order:
         count = severity_totals.get(severity, 0)
@@ -270,11 +170,11 @@ def create_severity_pie_chart(severity_totals):
             colors.append(matplotlib_colors[severity])
             explode.append(0.1 if severity == "Critical" else 0)
     
-    # Don't create chart if no data
+    # dont create chart if no data
     if not sizes:
         print("No vulnerability data for pie chart")
         dummy_path = os.path.join(OUTPUT_DIR, "cve_severity_pie_chart.png")
-        # Create a blank image
+        # create a blank image
         plt.figure(figsize=(8, 6))
         plt.text(0.5, 0.5, "No vulnerabilities found", ha='center', va='center', fontsize=16)
         plt.axis('off')
@@ -298,7 +198,7 @@ def generate_pdf_report(timestamp, programs, grouped, full_details, pie_chart_pa
     """Generate a comprehensive PDF report of vulnerability findings."""
     pdf_filename = os.path.join(OUTPUT_DIR, f"cybervault-report-{timestamp}.pdf")
     
-    # Create the PDF document
+    # create PDF 
     doc = SimpleDocTemplate(
         pdf_filename,
         pagesize=letter,
@@ -308,14 +208,14 @@ def generate_pdf_report(timestamp, programs, grouped, full_details, pie_chart_pa
         bottomMargin=72
     )
     
-    # Get styles
+    # get styles
     styles = getSampleStyleSheet()
     title_style = styles["Title"]
     heading_style = styles["Heading1"]
     heading2_style = styles["Heading2"]
     normal_style = styles["Normal"]
     
-    # Custom styles
+    # custom styles
     body_style = ParagraphStyle(
         'Body',
         parent=styles['Normal'],
@@ -344,26 +244,26 @@ def generate_pdf_report(timestamp, programs, grouped, full_details, pie_chart_pa
         backColor=colors.lightblue.clone(alpha=0.2),
     )
     
-    # Document elements
+    # document elements
     elements = []
     
-    # Cover page
+    # cover page
     elements.append(Paragraph("CyberVault Vulnerability Scan", title_style))
     elements.append(Spacer(1, 12))
     elements.append(Paragraph(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", normal_style))
     elements.append(Spacer(1, 24))
     
-    # Calculate total vulnerabilities by severity
+    # calculate total vulnerabilities by severity
     all_severities = Counter()
     for program_info, cves in grouped.items():
         for cve_id, score in cves:
             all_severities[classify_cvss(score)] += 1
     
-    # --- ENHANCED SECTION FOR NON-TECHNICAL USERS ---
+    # --- NONTECHNICAL SECTION ---
     elements.append(Paragraph("What This Report Means For You", heading_style))
     elements.append(Spacer(1, 12))
     
-    # Simple explanation of what vulnerabilities are
+    # explain vulns
     elements.append(Paragraph(
         "This report found security vulnerabilities in software installed on your computer. " +
         "A vulnerability is like a weak spot in your software that could potentially be exploited by hackers. " +
@@ -372,7 +272,7 @@ def generate_pdf_report(timestamp, programs, grouped, full_details, pie_chart_pa
     ))
     elements.append(Spacer(1, 12))
     
-    # Key findings in simple language
+    # findings in nontechnichal terms
     critical_count = all_severities.get('Critical', 0)
     high_count = all_severities.get('High', 0)
     total_count = sum(all_severities.values())
@@ -394,7 +294,7 @@ def generate_pdf_report(timestamp, programs, grouped, full_details, pie_chart_pa
     elements.append(Paragraph(key_findings, highlight_style))
     elements.append(Spacer(1, 12))
     
-    # What to do next - simple action steps
+    # nontechnichal action steps
     elements.append(Paragraph("What You Should Do", heading2_style))
     elements.append(Spacer(1, 6))
     
@@ -419,14 +319,14 @@ def generate_pdf_report(timestamp, programs, grouped, full_details, pie_chart_pa
     elements.append(Paragraph(what_to_do, body_style))
     elements.append(Spacer(1, 24))
     
-    # Add pie chart
+    # add pie chart
     if os.path.exists(pie_chart_path):
         elements.append(Paragraph("Vulnerability Severity Overview", heading2_style))
         elements.append(Spacer(1, 6))
         img = Image(pie_chart_path, width=400, height=300)
         elements.append(img)
         
-        # Add legend explaining severity levels
+        # add legend explaining severity levels
         elements.append(Spacer(1, 12))
         elements.append(Paragraph("Understanding Severity Levels:", heading2_style))
         elements.append(Spacer(1, 6))
@@ -445,15 +345,15 @@ def generate_pdf_report(timestamp, programs, grouped, full_details, pie_chart_pa
         elements.append(Paragraph(severity_explanation, body_style))
     
     elements.append(PageBreak())
-    # --- END OF ENHANCED SECTION ---
+    # --- END OF NONTECHNICHAL SECTION ---
     
-    # Summary table data
+    # summary table data
     elements.append(Paragraph("Detailed Summary", heading_style))
     elements.append(Spacer(1, 12))
     
     data = [["Severity", "Count", "Action Required"]]
     
-    # Sort by priority
+    # sort by priority
     for severity in ["Critical", "High", "Medium", "Low", "None", "Unknown"]:
         count = all_severities.get(severity, 0)
         if count > 0:
@@ -463,7 +363,7 @@ def generate_pdf_report(timestamp, programs, grouped, full_details, pie_chart_pa
                 SEVERITY_CLASSES[severity]["action"]
             ])
     
-    # Create table
+    # create table
     table = Table(data, colWidths=[80, 60, 300])
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
@@ -478,11 +378,11 @@ def generate_pdf_report(timestamp, programs, grouped, full_details, pie_chart_pa
     elements.append(table)
     elements.append(Spacer(1, 24))
     
-    # Page break before detailed findings
+    # page break before detailed findings
     elements.append(Paragraph("Detailed Findings", heading_style))
     elements.append(Spacer(1, 12))
     
-    # Sort programs by their highest severity vulnerability
+    # sort programs by their severity 
     def get_highest_severity(program_cves):
         highest = -1
         for _, score in program_cves[1]:
@@ -492,18 +392,18 @@ def generate_pdf_report(timestamp, programs, grouped, full_details, pie_chart_pa
     
     sorted_programs = sorted(grouped.items(), key=get_highest_severity, reverse=True)
     
-    # Program details
+    # program details
     for (prog_name, prog_version), cves in sorted_programs:
         severity_counts = Counter(classify_cvss(score) for _, score in cves)
         
-        # Determine highest severity
+        # determine highest severity
         highest_severity = "Unknown"
         for severity in ["Critical", "High", "Medium", "Low", "None"]:
             if severity_counts[severity] > 0:
                 highest_severity = severity
                 break
         
-        # Program heading with color-coded severity
+        # program heading with color-coded severity
         color = SEVERITY_CLASSES[highest_severity]["color"]
         action = SEVERITY_CLASSES[highest_severity]["action"]
         
@@ -517,7 +417,7 @@ def generate_pdf_report(timestamp, programs, grouped, full_details, pie_chart_pa
         elements.append(Paragraph(f"{prog_name} (version: {prog_version})", program_style))
         elements.append(Spacer(1, 6))
         
-        # Add simple explanation for this program
+        # add simple explanation for this program
         if highest_severity in ["Critical", "High"]:
             action_text = f"<b>Recommended Action</b>: {action} - This software has serious security issues that need attention."
         elif highest_severity == "Medium":
@@ -528,7 +428,7 @@ def generate_pdf_report(timestamp, programs, grouped, full_details, pie_chart_pa
         elements.append(Paragraph(action_text, body_style))
         elements.append(Spacer(1, 6))
         
-        # Vulnerability statistics
+        # vuln statistics
         elements.append(Paragraph(f"Total vulnerabilities: {len(cves)}", body_style))
         elements.append(Paragraph(
             f"Severity breakdown: Critical: {severity_counts['Critical']}, " +
@@ -537,16 +437,16 @@ def generate_pdf_report(timestamp, programs, grouped, full_details, pie_chart_pa
         ))
         elements.append(Spacer(1, 12))
         
-        # If there are detailed findings for this program
+        # if there are detailed findings for this program
         if (prog_name, prog_version) in full_details:
-            # Sort details by severity
+            # sort by severity
             sorted_details = sorted(
                 full_details[(prog_name, prog_version)],
                 key=lambda x: float(-999 if x[2] is None else x[2]),
                 reverse=True
             )
             
-            # Show top vulnerabilities (limit to 5 to keep report manageable)
+            # show top vulnerabilities (limit to 5 to keep report manageable)
             elements.append(Paragraph("Top Vulnerabilities:", body_style))
             for i, (cve_id, desc, score) in enumerate(sorted_details[:5]):
                 severity = classify_cvss(score)
@@ -560,14 +460,14 @@ def generate_pdf_report(timestamp, programs, grouped, full_details, pie_chart_pa
             
         elements.append(Spacer(1, 18))
     
-    # Build the PDF
+    # buld PDF
     doc.build(elements)
     print(f"PDF report generated: {pdf_filename}")
     return pdf_filename
 
 
+# match installed software against CVE database and generate report
 def match_installed_software():
-    """Match installed software against CVE database and generate report."""
     print("Matching installed software against CVE database...")
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -581,17 +481,17 @@ def match_installed_software():
         except Exception:
             continue
 
-        # Try to match with broader terms for better results
+        # try to match with broader terms for better results
         name_terms = name.split()
         if not name_terms:
             continue
             
-        # Try with first word and then with multiple words for better matching
+        # try with first word and then multiple words for better matching
         search_terms = [name_terms[0]]
         if len(name_terms) > 1:
             search_terms.append(f"{name_terms[0]} {name_terms[1]}")
         
-        # Add common software names that might be referenced differently in CVEs
+        # add common software names that might be referenced differently in CVEs
         if "chrome" in name.lower():
             search_terms.append("chromium")
         elif "microsoft" in name.lower():
@@ -619,7 +519,7 @@ def match_installed_software():
                     if version_end:
                         version_end = str(version_end).strip()
 
-                    # Check version constraints
+                    # check version constraints
                     version_match = True
                     if version_start and version_end:
                         version_match = parse_version(version_start) <= installed_version <= parse_version(version_end)
@@ -636,21 +536,21 @@ def match_installed_software():
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # Count vulnerabilities by severity
+    # count vulnerabilities by severity
     severity_totals = Counter()
     for values in grouped.values():
         for _, score in values:
             severity_totals[classify_cvss(score)] += 1
 
-    # Create pie chart
+    # create pie chart
     pie_chart_path = create_severity_pie_chart(severity_totals)
 
-    # Print summary to console
+    # print summary to terminal
     print("\nSummary of Vulnerable Programs:\n")
     for (prog_name, prog_version), cves in grouped.items():
         severity_counts = Counter(classify_cvss(score) for _, score in cves)
         
-        # Determine highest severity
+        # determine highest severity
         highest_severity = "Unknown"
         for severity in ["Critical", "High", "Medium", "Low", "None"]:
             if severity_counts[severity] > 0:
@@ -663,7 +563,7 @@ def match_installed_software():
         print(f"Total CVEs: {len(cves)} | Critical: {severity_counts['Critical']}, High: {severity_counts['High']}, Medium: {severity_counts['Medium']}")
         print(f"Suggested Action: {action}\n")
 
-    # Generate PDF report
+    # generate PDF report
     pdf_path = generate_pdf_report(timestamp, programs, grouped, full_details, pie_chart_path)
     conn.close()
     
@@ -672,12 +572,11 @@ def match_installed_software():
 
 
 def main():
-    """Main function to run the vulnerability scanner."""
     print("CyberVault Vulnerability Scanner")
     print("===============================")
     
-    # Check if database exists, if not download it
-    #download_cve_database()
+    # download latest cve db version
+    download_cve_database()
     
     # Scan system and generate report
     match_installed_software()
