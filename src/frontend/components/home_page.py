@@ -1,14 +1,16 @@
 import os
+import re
 import webbrowser
 import subprocess
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QLabel, QListWidget, QListWidgetItem, QTextEdit, QSizePolicy,
-    QMessageBox
+    QMessageBox, QFrame, QGraphicsDropShadowEffect, QSpacerItem
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSize, QPropertyAnimation, QEasingCurve
+from PyQt5.QtGui import QColor, QFont, QIcon, QPixmap
 
-from ..utils.news_utils import get_cybersecurity_news
+from ..utils.news_utils import get_cybersecurity_news, NewsItemWidget, get_fallback_cybersecurity_news
 
 
 class HomePage(QWidget):
@@ -26,7 +28,7 @@ class HomePage(QWidget):
         home_layout = QHBoxLayout()
 
         # Left: News Preview
-        left_layout = QVBoxLayout()
+        self.left_layout = QVBoxLayout()
         news_label = QLabel("Cyber News Preview")
         news_label.setStyleSheet("""
             font-size: 18px;
@@ -73,40 +75,174 @@ class HomePage(QWidget):
         # Set up double-click handling for scan results box
         self.scan_results_box.mouseDoubleClickEvent = self.scan_results_box_clicked
 
+        # Reports header
+        reports_label = QLabel("Recent Reports")
+        reports_label.setStyleSheet("""
+            font-size: 18px;
+            font-weight: bold;
+            color: #0de8f2;
+            margin-top: 10px;
+        """)
+
+        left_container.addWidget(reports_label)
         left_container.addWidget(self.scan_results_box, stretch=1)
-        left_layout.addLayout(left_container)
+        self.left_layout.addLayout(left_container)
 
         # Right: Welcome and Scan
-        right_layout = QVBoxLayout()
-        title = QLabel("Welcome to Cybervault")
+        self.right_layout = QVBoxLayout()
+
+        # Add the layouts to the main layout
+        home_layout.addLayout(self.left_layout, 1)
+        home_layout.addLayout(self.right_layout, 3)
+
+        self.setLayout(home_layout)
+
+        # Call the enhanced welcome section
+        self.welcome_section()
+
+        # Load news and reports
+        self.load_news_preview()
+        self.update_reports_list()
+
+    def welcome_section(self):
+        """Create a minimalist welcome and scan section with clean design."""
+
+
+        container = QFrame()
+        container.setStyleSheet("""
+            background-color: transparent;
+        """)
+
+        main_layout = QVBoxLayout(container)
+        main_layout.setContentsMargins(40, 60, 40, 60)
+        main_layout.setSpacing(30)
+
+
+        title = QLabel("CVE SCANNER")
         title.setStyleSheet("""
-            font-size: 32px;
-            font-weight: bold;
+            font-size: 38px;
+            font-weight: 700;
+            letter-spacing: 4px;
             color: #0de8f2;
         """)
         title.setAlignment(Qt.AlignCenter)
 
-        self.scan_button = QPushButton("Start Scan")
-        self.scan_button.setStyleSheet("""
-            font-size: 18px;
-            color: white;
-            background-color: #1a1a1a;
-            padding: 10px;
+
+        subtitle = QLabel("Vulnerability Scanner by CyberVault")
+        subtitle.setStyleSheet("""
+            font-size: 16px;
+            color: #888888;
+            letter-spacing: 1px;
         """)
-        # Signal handling will be connected in the main UI
+        subtitle.setAlignment(Qt.AlignCenter)
 
-        right_layout.addStretch()
-        right_layout.addWidget(title)
-        right_layout.addSpacing(20)
-        right_layout.addWidget(self.scan_button)
-        right_layout.addStretch()
+        # Add horizontal rule
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setStyleSheet("""
+            background-color: #333333;
+            max-height: 1px;
+        """)
 
-        home_layout.addLayout(left_layout, 1)
-        home_layout.addLayout(right_layout, 3)
+        self.scan_button = QPushButton("SCAN SYSTEM")
+        self.scan_button.setStyleSheet("""
+            QPushButton {
+                font-size: 16px;
+                font-weight: 600;
+                letter-spacing: 2px;
+                color: #000000;
+                background-color: #0de8f2;
+                border: none;
+                border-radius: 4px;
+                padding: 18px 36px;
+                margin: 20px 40px;
+            }
+            QPushButton:hover {
+                background-color: #ffffff;
+            }
+        """)
+        self.scan_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
 
-        self.setLayout(home_layout)
-        self.load_news_preview()
-        self.update_reports_list()
+
+        stats_layout = QHBoxLayout()
+        stats_layout.setSpacing(24)
+
+
+        for value, label in [
+            ("SCAN", "TO FIND VULNERABILITIES"),
+            ("ANALYZE", "TO FIND SEVERITY"),
+            ("ACT", "TO PREVENT ATTACKS")
+        ]:
+            # Vertical container
+            stat_container = QVBoxLayout()
+            stat_container.setSpacing(4)
+
+            # Large statistic value
+            value_label = QLabel(value)
+            value_label.setStyleSheet("""
+                font-size: 16px;
+                font-weight: 600;
+                color: #ffffff;
+            """)
+            value_label.setAlignment(Qt.AlignCenter)
+
+            # Small label
+            desc_label = QLabel(label)
+            desc_label.setStyleSheet("""
+                font-size: 9px;
+                color: #666666;
+                letter-spacing: 1px;
+            """)
+            desc_label.setAlignment(Qt.AlignCenter)
+
+            # Add to container
+            stat_container.addWidget(value_label)
+            stat_container.addWidget(desc_label)
+
+            # Add to horizontal layout
+            stats_layout.addLayout(stat_container)
+
+        # Build the layout from top to bottom
+        main_layout.addStretch()
+        main_layout.addWidget(title, 0, Qt.AlignCenter)
+        main_layout.addWidget(subtitle, 0, Qt.AlignCenter)
+        main_layout.addWidget(separator)
+        main_layout.addWidget(self.scan_button, 0, Qt.AlignCenter)
+        main_layout.addStretch()
+        main_layout.addLayout(stats_layout)
+
+        # Add the container to the right layout
+        self.right_layout.addWidget(container)
+
+        # subtle animation on scan button hover
+        def on_button_hover():
+            self.scan_button.setStyleSheet("""
+                font-size: 16px;
+                font-weight: 600;
+                letter-spacing: 2px;
+                color: #000000;
+                background-color: #ffffff;
+                border: none;
+                border-radius: 4px;
+                padding: 18px 36px;
+                margin: 20px 40px;
+            """)
+
+        def on_button_leave():
+            self.scan_button.setStyleSheet("""
+                font-size: 16px;
+                font-weight: 600;
+                letter-spacing: 2px;
+                color: #000000;
+                background-color: #0de8f2;
+                border: none;
+                border-radius: 4px;
+                padding: 18px 36px;
+                margin: 20px 40px;
+            """)
+
+        self.scan_button.enterEvent = lambda e: on_button_hover()
+        self.scan_button.leaveEvent = lambda e: on_button_leave()
 
     def load_news_preview(self):
         """Load news preview with a compact design that ensures all content fits within available width."""
@@ -283,7 +419,6 @@ class HomePage(QWidget):
         # Connect click event for the whole item
         self.home_news_list.itemClicked.connect(self.handle_news_item_click)
 
-
     def handle_news_item_click(self, item):
         """Handle click on a news item."""
         index = self.home_news_list.row(item)
@@ -389,7 +524,13 @@ class HomePage(QWidget):
                 # Check if the file exists
                 if os.path.exists(file_path):
                     try:
-                        os.startfile(file_path)
+                        # Use the default system PDF viewer to open the report
+                        if sys.platform == "win32":
+                            os.startfile(file_path)
+                        elif sys.platform == "darwin":  # macOS
+                            subprocess.run(["open", file_path])
+                        else:  # Linux
+                            subprocess.run(["xdg-open", file_path])
                     except Exception as e:
                         print(f"Error opening file: {e}")  # Debug info
                         QMessageBox.warning(self, "Error Opening Report",
@@ -405,15 +546,19 @@ class HomePage(QWidget):
 
         if file_path and os.path.exists(file_path):
             try:
-                os.startfile(file_path)
+                # Use the default system PDF viewer to open the report
+                if sys.platform == "win32":
+                    os.startfile(file_path)
+                elif sys.platform == "darwin":  # macOS
+                    subprocess.run(["open", file_path])
+                else:  # Linux
+                    subprocess.run(["xdg-open", file_path])
             except Exception as e:
                 QMessageBox.warning(self, "Error Opening Report",
                                     f"Could not open the report:\n\n{str(e)}")
         else:
             QMessageBox.information(self, "Report Not Available",
                                     "The report file could not be found.")
-
-
 
     def update_reports_list(self):
         """Update the scan_results_box to show available reports with custom formatting"""
