@@ -1,9 +1,7 @@
 import os
-import subprocess
-import sys
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QLabel, QTextEdit, QProgressBar, QMessageBox
+    QLabel, QTextEdit, QProgressBar
 )
 from PyQt5.QtCore import Qt
 

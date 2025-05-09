@@ -73,7 +73,15 @@ def run_scan():
     # Scan system
     print("Starting vulnerability scan...")
     try:
+        # Small delay to allow the UI progress bar to update properly
+        import time
+        time.sleep(0.5)
+
+        # Perform the scan
         scan_data = match_installed_software(OUTPUT_DIR)
+
+        # Small delay for UI responsiveness
+        time.sleep(0.5)
 
         # Generate report
         print("Generating vulnerability report...")
