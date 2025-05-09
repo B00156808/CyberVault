@@ -89,7 +89,17 @@ def match_installed_software(output_dir="reports"):
     print("Matching installed software against CVE database...")
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
+
+    # Add a small delay to allow UI to update progress
+    import time
+    time.sleep(0.5)
+
+    # Get installed programs
     programs = get_installed_programs()
+
+    # Add another small delay
+    time.sleep(0.5)
+
     grouped = defaultdict(list)
     full_details = defaultdict(list)
 
@@ -163,6 +173,9 @@ def match_installed_software(output_dir="reports"):
             severity_totals[classify_cvss(score)] += 1
 
     conn.close()
+
+    # Add one more small delay before returning results
+    time.sleep(0.5)
 
     # Return data for report generation
     return {

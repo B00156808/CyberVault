@@ -2,7 +2,7 @@ import requests
 import webbrowser
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QScrollArea, QListWidget, QListWidgetItem, QFrame
+    QScrollArea, QFrame
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QPainter, QBrush, QColor
@@ -92,6 +92,36 @@ class NewsPage(QWidget):
             if self.scroll_layout.itemAt(i).widget():
                 self.scroll_layout.itemAt(i).widget().deleteLater()
 
+        # If no news items were returned, get fallback content
+        if not self.news_items:
+            from ..utils.news_utils import get_fallback_cybersecurity_news
+            self.news_items = get_fallback_cybersecurity_news()
+
+        # Add a header label if using fallback news
+        if len(self.news_items) > 0 and "CISA" in self.news_items[0][0] or "CVE" in self.news_items[0][0]:
+            fallback_header = QLabel("Online Cybersecurity Resources")
+            fallback_header.setStyleSheet("""
+                font-size: 18px;
+                color: #0de8f2;
+                font-weight: bold;
+                margin-bottom: 10px;
+            """)
+            self.scroll_layout.addWidget(fallback_header)
+
+            # Add explanatory text
+            fallback_info = QLabel(
+                "Below are links to trusted cybersecurity resources and organizations "
+                "that provide the latest information on threats, vulnerabilities, and best practices. "
+                "These resources are essential for staying informed about the current cybersecurity landscape."
+            )
+            fallback_info.setWordWrap(True)
+            fallback_info.setStyleSheet("""
+                font-size: 14px;
+                color: #cccccc;
+                margin-bottom: 20px;
+            """)
+            self.scroll_layout.addWidget(fallback_info)
+
         for title, description, link, image_url in self.news_items:
             article_widget = QWidget()
             article_layout = QVBoxLayout()  # Changed to QVBoxLayout to stack elements vertically
@@ -114,8 +144,26 @@ class NewsPage(QWidget):
                     image_pixmap.fill(Qt.darkGray)
                     image_pixmap = self.create_circular_pixmap(image_pixmap, 100)
             else:
+                # Create a themed placeholder based on the title content
                 image_pixmap = QPixmap(50, 50)
-                image_pixmap.fill(Qt.darkGray)
+
+                # Choose color based on title content
+                if "CISA" in title or "government" in title:
+                    bg_color = QColor(0, 100, 150)  # Blue for government
+                elif "NIST" in title:
+                    bg_color = QColor(70, 100, 170)  # Blue-purple for standards
+                elif "OWASP" in title:
+                    bg_color = QColor(170, 70, 50)  # Red for web security
+                elif "CVE" in title or "vulnerabilit" in title.lower():
+                    bg_color = QColor(170, 100, 0)  # Orange for vulnerabilities
+                elif "SANS" in title:
+                    bg_color = QColor(50, 120, 50)  # Green for SANS
+                elif "Krebs" in title:
+                    bg_color = QColor(100, 50, 120)  # Purple for blogs
+                else:
+                    bg_color = Qt.darkGray  # Default gray
+
+                image_pixmap.fill(bg_color)
                 image_pixmap = self.create_circular_pixmap(image_pixmap, 100)
 
             image_label.setPixmap(image_pixmap)

@@ -1,5 +1,4 @@
 import os
-import re
 import webbrowser
 import subprocess
 from PyQt5.QtWidgets import (
@@ -9,7 +8,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 
-from ..utils.news_utils import get_cybersecurity_news, NewsItemWidget, get_fallback_cybersecurity_news
+from ..utils.news_utils import get_cybersecurity_news
 
 
 class HomePage(QWidget):
@@ -125,6 +124,9 @@ class HomePage(QWidget):
             print("No articles returned, using fallback content")
             from ..utils.news_utils import get_fallback_cybersecurity_news
             self.home_news_articles = get_fallback_cybersecurity_news()
+            # Limit to 5 items for the home page preview
+            if len(self.home_news_articles) > 5:
+                self.home_news_articles = self.home_news_articles[:5]
 
         # Calculate available width - get the actual visible width of the list widget
         list_width = self.home_news_list.viewport().width()
@@ -173,8 +175,22 @@ class HomePage(QWidget):
             article_layout.setContentsMargins(6, 6, 6, 6)  # Minimal margins
             article_layout.setSpacing(2)  # Minimal spacing
 
-            # Add a small tag at the top
-            tag_label = QLabel("CYBERSECURITY")
+            # Add a small tag at the top - Use different tags for different cybersecurity topics
+            tag_text = "CYBERSECURITY"
+            if "CISA" in title or "government" in description.lower():
+                tag_text = "GOVERNMENT"
+            elif "NIST" in title:
+                tag_text = "STANDARDS"
+            elif "OWASP" in title:
+                tag_text = "WEB SECURITY"
+            elif "CVE" in title:
+                tag_text = "VULNERABILITIES"
+            elif "SANS" in title:
+                tag_text = "THREAT INTEL"
+            elif "privacy" in title.lower() or "privacy" in description.lower():
+                tag_text = "PRIVACY"
+
+            tag_label = QLabel(tag_text)
             tag_label.setFixedWidth(content_width - 15)  # Constrain width
             tag_label.setStyleSheet("""
                 color: #0de8f2;
@@ -183,7 +199,7 @@ class HomePage(QWidget):
                 background-color: rgba(13, 232, 242, 0.1);
                 border-radius: 2px;
                 padding: 1px 4px;
-                max-width: 85px;
+                max-width: 100px;
             """)
             article_layout.addWidget(tag_label, 0, Qt.AlignLeft)
 
@@ -266,6 +282,7 @@ class HomePage(QWidget):
 
         # Connect click event for the whole item
         self.home_news_list.itemClicked.connect(self.handle_news_item_click)
+
 
     def handle_news_item_click(self, item):
         """Handle click on a news item."""
@@ -372,13 +389,7 @@ class HomePage(QWidget):
                 # Check if the file exists
                 if os.path.exists(file_path):
                     try:
-                        # Use the default system PDF viewer to open the report
-                        if sys.platform == "win32":
-                            os.startfile(file_path)
-                        elif sys.platform == "darwin":  # macOS
-                            subprocess.run(["open", file_path])
-                        else:  # Linux
-                            subprocess.run(["xdg-open", file_path])
+                        os.startfile(file_path)
                     except Exception as e:
                         print(f"Error opening file: {e}")  # Debug info
                         QMessageBox.warning(self, "Error Opening Report",
@@ -394,13 +405,7 @@ class HomePage(QWidget):
 
         if file_path and os.path.exists(file_path):
             try:
-                # Use the default system PDF viewer to open the report
-                if sys.platform == "win32":
-                    os.startfile(file_path)
-                elif sys.platform == "darwin":  # macOS
-                    subprocess.run(["open", file_path])
-                else:  # Linux
-                    subprocess.run(["xdg-open", file_path])
+                os.startfile(file_path)
             except Exception as e:
                 QMessageBox.warning(self, "Error Opening Report",
                                     f"Could not open the report:\n\n{str(e)}")
