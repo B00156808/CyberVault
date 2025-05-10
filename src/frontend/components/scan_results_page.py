@@ -247,7 +247,7 @@ class ScanResultsPage(QWidget):
                 severity_html += "<tr><td colspan='3'><hr></td></tr>"  # Horizontal line
 
                 # Sort by severity level
-                severity_order = ["Critical", "High", "Medium", "Low", "None", "Unknown"]
+                severity_order = ["Critical", "High", "Medium", "Low", "None"]
                 for severity in severity_order:
                     count = severity_data.get(severity, 0)
                     if count > 0:

@@ -32,7 +32,7 @@ class VulnerabilityPieChart(FigureCanvas):
         sizes = []
 
         # Define the order we want
-        severity_order = ["Critical", "High", "Medium", "Low", "None", "Unknown"]
+        severity_order = ["Critical", "High", "Medium", "Low", "None"]
 
         # Sort data by predefined order
         for severity in severity_order:

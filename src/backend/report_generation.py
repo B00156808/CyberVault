@@ -32,7 +32,6 @@ SEVERITY_CLASSES = {
     "Medium": {"min": SEVERITY_THRESHOLDS["Medium"], "color": colors.orange, "action": SEVERITY_ACTIONS["Medium"]},
     "Low": {"min": SEVERITY_THRESHOLDS["Low"], "color": colors.yellow, "action": SEVERITY_ACTIONS["Low"]},
     "None": {"min": SEVERITY_THRESHOLDS["None"], "color": colors.lightgrey, "action": SEVERITY_ACTIONS["None"]},
-    "Unknown": {"min": SEVERITY_THRESHOLDS["Unknown"], "color": colors.grey, "action": SEVERITY_ACTIONS["Unknown"]}
 }
 
 
@@ -53,11 +52,11 @@ def create_severity_pie_chart(severity_totals):
         "Medium": "orange",
         "Low": "yellow",
         "None": "lightgrey",
-        "Unknown": "grey"
+        # "Unknown": "grey"
     }
 
     # Sort by severity (Critical first)
-    priority_order = ["Critical", "High", "Medium", "Low", "None", "Unknown"]
+    priority_order = ["Critical", "High", "Medium", "Low", "None"]
     for severity in priority_order:
         count = severity_totals.get(severity, 0)
         if count > 0:
@@ -191,6 +190,7 @@ def generate_pdf_report(scan_data):
     all_severities = Counter()
     for program_info, cves in grouped.items():
         for cve_id, score in cves:
+         #   if severity != "Unknown":  
             all_severities[classify_cvss(score)] += 1
 
     # --- ENHANCED SECTION FOR NON-TECHNICAL USERS ---
@@ -288,7 +288,7 @@ def generate_pdf_report(scan_data):
     data = [["Severity", "Count", "Action Required"]]
 
     # Sort by priority
-    for severity in ["Critical", "High", "Medium", "Low", "None", "Unknown"]:
+    for severity in ["Critical", "High", "Medium", "Low", "None"]:
         count = all_severities.get(severity, 0)
         if count > 0:
             data.append([
@@ -331,7 +331,7 @@ def generate_pdf_report(scan_data):
         severity_counts = Counter(classify_cvss(score) for _, score in cves)
 
         # Determine highest severity
-        highest_severity = "Unknown"
+        highest_severity = "None"
         for severity in ["Critical", "High", "Medium", "Low", "None"]:
             if severity_counts[severity] > 0:
                 highest_severity = severity
