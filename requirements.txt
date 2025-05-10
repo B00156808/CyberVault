@@ -1,0 +1,6 @@
+PyQt5==5.15.6
+matplotlib
+reportlab
+requests
+packaging
+pyinstaller
