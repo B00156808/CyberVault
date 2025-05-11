@@ -9,7 +9,6 @@ SEVERITY_THRESHOLDS = {
     "Medium": 4.0,
     "Low": 0.1,
     "None": 0.0,
-    "Unknown": None
 }
 
 # Severity colors for UI
@@ -19,7 +18,6 @@ SEVERITY_COLORS_UI = {
     "Medium": "gold",
     "Low": "lightgreen",
     "None": "gray",
-    "Unknown": "darkgray"
 }
 
 # Severity colors for reports (using reportlab color objects)
@@ -41,7 +39,6 @@ SEVERITY_COLORS_CHART = {
     "Medium": "gold",
     "Low": "lightgreen",
     "None": "gray",
-    "Unknown": "darkgray"
 }
 
 # Recommended actions based on severity
@@ -51,5 +48,4 @@ SEVERITY_ACTIONS = {
     "Medium": "Consider updating in the next maintenance cycle",
     "Low": "Optional update at your convenience",
     "None": "No action required",
-    "Unknown": "Review when more information becomes available"
 }
