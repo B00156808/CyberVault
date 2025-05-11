@@ -84,8 +84,14 @@ def get_installed_programs():
     return programs
 
 
-def match_installed_software(output_dir="reports"):
-    """Match installed software against CVE database and generate report."""
+def match_installed_software(output_dir="reports", include_unknown=False):
+    """
+    Match installed software against CVE database and generate report.
+    
+    Args:
+        output_dir (str): Directory to store reports
+        include_unknown (bool): Whether to include Unknown severity vulnerabilities
+    """
     print("Matching installed software against CVE database...")
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -143,6 +149,10 @@ def match_installed_software(output_dir="reports"):
 
             for cve_id, cvss_score, version_start, version_end, description in results:
                 try:
+                    # Skip unknown severity if we're not including them
+                    if not include_unknown and cvss_score is None:
+                        continue
+                        
                     if version_start:
                         version_start = str(version_start).strip()
                     if version_end:
@@ -158,19 +168,34 @@ def match_installed_software(output_dir="reports"):
                         version_match = installed_version <= parse_version(version_end)
 
                     if version_match:
-                        grouped[(name, version)].append((cve_id, cvss_score))
-                        full_details[(name, version)].append((cve_id, description, cvss_score))
+                        # Only include if severity is not Unknown or if include_unknown is True
+                        if include_unknown or classify_cvss(cvss_score) != "Unknown":
+                            grouped[(name, version)].append((cve_id, cvss_score))
+                            full_details[(name, version)].append((cve_id, description, cvss_score))
                 except Exception:
                     continue
+    
+    # Remove programs with no vulnerabilities after filtering
+    empty_programs = []
+    for program_key in list(grouped.keys()):
+        if not grouped[program_key]:
+            empty_programs.append(program_key)
+            
+    for program_key in empty_programs:
+        del grouped[program_key]
+        if program_key in full_details:
+            del full_details[program_key]
 
     # Get timestamp for report identification
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # Count vulnerabilities by severity
+    # Count vulnerabilities by severity - exclude Unknown if needed
     severity_totals = Counter()
     for values in grouped.values():
         for _, score in values:
-            severity_totals[classify_cvss(score)] += 1
+            severity = classify_cvss(score)
+            if include_unknown or severity != "Unknown":
+                severity_totals[severity] += 1
 
     conn.close()
 

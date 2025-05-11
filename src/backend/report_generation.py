@@ -190,7 +190,6 @@ def generate_pdf_report(scan_data):
     all_severities = Counter()
     for program_info, cves in grouped.items():
         for cve_id, score in cves:
-         #   if severity != "Unknown":  
             all_severities[classify_cvss(score)] += 1
 
     # --- ENHANCED SECTION FOR NON-TECHNICAL USERS ---
@@ -274,7 +273,6 @@ def generate_pdf_report(scan_data):
 
         <b>Low</b>: Minor security weaknesses that pose limited risk.<br/><br/>
 
-        <b>Unknown</b>: Issues where the severity couldn't be determined.<br/><br/>
         """
         elements.append(Paragraph(severity_explanation, body_style))
 
