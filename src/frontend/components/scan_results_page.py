@@ -196,12 +196,7 @@ class ScanResultsPage(QWidget):
                 print(f"Opening PDF report: {self.pdf_report_path}")
 
                 # Use the default system PDF viewer to open the report
-                if sys.platform == "win32":
-                    os.startfile(self.pdf_report_path)
-                elif sys.platform == "darwin":  # macOS
-                    subprocess.run(["open", self.pdf_report_path])
-                else:  # Linux
-                    subprocess.run(["xdg-open", self.pdf_report_path])
+                os.startfile(self.pdf_report_path)
 
             except Exception as e:
                 QMessageBox.warning(self, "Error Opening Report",

@@ -5,7 +5,7 @@ This module coordinates the scanning process, database operations, and report ge
 
 import os
 import sqlite3
-from datetime import datetime
+from datetime import *
 
 # Import from config module
 from ..config.settings import DB_FILE, REPORTS_DIR
@@ -23,16 +23,39 @@ if not os.path.exists(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR)
 
 
+
+
 def ensure_database_exists():
     """Make sure the database exists and has the required tables."""
     print("Checking database...")
-
+   
+    # Get current time
+    now = datetime.now()
+    current_day = now.weekday()  
+    current_time = now.time()
+   
+    # Check if scheduled server update is currently happening
+    is_sunday_night = current_day == 6 and current_time >= time(23, 55)
+    is_monday_early = current_day == 0 and current_time <= time(1, 0)
+    in_exclusion_window = is_sunday_night or is_monday_early
+   
     # First check if database exists and is valid
     if verify_database():
-        print("Database verified and ready.")
-        return True
-
+        if in_exclusion_window:
+            print("Database is valid. Not updating during maintenance window (Sunday 23:55 - Monday 1:00).")
+            return True
+        else:
+            print("Updating database...")
+            if download_cve_database():
+                if verify_database():
+                    print("Updated database verified and ready.")
+                    return True
+                else:
+                    print("Downloaded database failed verification.")
+            return True
+           
     # If verification failed, try to download the database
+    # Even during exclusion window, we need to ensure a valid database exists
     print("Database not valid. Attempting to download...")
     if download_cve_database():
         if verify_database():
@@ -40,21 +63,18 @@ def ensure_database_exists():
             return True
         else:
             print("Downloaded database failed verification.")
-
+   
     # If download failed or verification still fails, create a new database
     print("Creating new database...")
     if create_db():
         print("New database created.")
-
         # For testing, add some sample data so we can test the application
         print("Adding test data for development...")
         populate_test_data()
-
         return verify_database()
-
+   
     print("Failed to set up database.")
     return False
-
 
 def run_scan():
     """Run a complete vulnerability scan and generate a report.

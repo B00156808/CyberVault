@@ -5,10 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f2254e48-725d-408c-a6a6-0d1976a92ece" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/CyberVault.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/CyberVault.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/.vscode/settings.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/backend/scanner.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/backend/scanner.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/backend/cve_checker.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/backend/cve_checker.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/frontend/components/scan_results_page.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/frontend/components/scan_results_page.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -73,6 +72,7 @@
       <updated>1745696725379</updated>
       <workItem from="1746815909541" duration="7123000" />
       <workItem from="1746830444544" duration="1364000" />
+      <workItem from="1746978481830" duration="1374000" />
     </task>
     <servers />
   </component>
