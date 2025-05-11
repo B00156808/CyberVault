@@ -1,12 +1,10 @@
 import requests
-import webbrowser
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QScrollArea, QFrame
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QPainter, QBrush, QColor
-
 from ..utils.news_utils import get_cybersecurity_news
 
 
@@ -61,9 +59,9 @@ class NewsPage(QWidget):
         right_container.setLayout(right_layout)
 
         # Add left, middle, and right containers to the layout
-        layout.addWidget(left_container, 1)  # Left takes flexible space
-        layout.addWidget(middle_container, 3)  # Middle takes 3 times as much space
-        layout.addWidget(right_container, 1)  # Right takes flexible space
+        layout.addWidget(left_container, 1)
+        layout.addWidget(middle_container, 3)
+        layout.addWidget(right_container, 1)
 
         self.setLayout(layout)
         self.load_news_articles()

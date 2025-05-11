@@ -59,7 +59,7 @@ class NetworkMonitor(QObject):
         while self.is_running:
             is_connected = check_internet_connection()
 
-            # If this is the first check, just store the state
+            # first check, store the state
             if self.was_connected is None:
                 self.was_connected = is_connected
             # If state changed from disconnected to connected

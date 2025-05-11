@@ -1,18 +1,48 @@
 """
-Configuration settings for the CyberVault application.
+Configuration settings for the application.
 """
 
 import os
+import sys
 from datetime import datetime
 
-# Calculate paths relative to the settings.py file
-settings_dir = os.path.dirname(os.path.abspath(__file__))  # config directory
-src_dir = os.path.dirname(settings_dir)                   # src directory
-project_root = os.path.dirname(src_dir)                   # project root
+def get_application_paths():
+    """Get application paths based on whether we're running as executable or script."""
+    # Check if we're running as a PyInstaller executable
+    if getattr(sys, 'frozen', False):
+        # We're running as an executable
+        # Store both program data and reports in AppData\Local\CyberVault
+        appdata_dir = os.path.join(os.environ['LOCALAPPDATA'], "CyberVault")
 
-# Set up paths for data and reports in the project root
-DATA_DIR = os.path.join(project_root, "data")
-REPORTS_DIR = os.path.join(project_root, "reports")
+        # Create the directory if it doesn't exist
+        if not os.path.exists(appdata_dir):
+            os.makedirs(appdata_dir)
+            print(f"Created CyberVault directory: {appdata_dir}")
+
+        return {
+            'DATA_DIR': os.path.join(appdata_dir, "data"),
+            'REPORTS_DIR': os.path.join(appdata_dir, "reports"),
+            'PROJECT_ROOT': appdata_dir,
+            'SETTINGS_DIR': os.path.dirname(os.path.abspath(__file__))
+        }
+    else:
+        settings_dir = os.path.dirname(os.path.abspath(__file__))
+        src_dir = os.path.dirname(settings_dir)
+        project_root = os.path.dirname(src_dir)
+
+        return {
+            'DATA_DIR': os.path.join(project_root, "data"),
+            'REPORTS_DIR': os.path.join(project_root, "reports"),
+            'PROJECT_ROOT': project_root,
+            'SETTINGS_DIR': settings_dir
+        }
+
+# Get the appropriate paths
+paths = get_application_paths()
+DATA_DIR = paths['DATA_DIR']
+REPORTS_DIR = paths['REPORTS_DIR']
+project_root = paths['PROJECT_ROOT']
+settings_dir = paths['SETTINGS_DIR']
 
 # Database settings
 DB_FILE = os.path.join(DATA_DIR, "cves.db")

@@ -22,7 +22,6 @@ from src.frontend.utils.network_utils import NetworkMonitor, check_internet_conn
 
 
 # Worker class for background processing
-# Worker class for background processing
 class ScanWorker(QObject):
     scan_complete = pyqtSignal(dict)
     scan_progress = pyqtSignal(int, str)
@@ -394,7 +393,7 @@ class AppContent(QWidget):
         print("AppContent content refreshed.")
 
 
-# For backward compatibility, keep a simplified App class that uses MainWindow
+# For backward compatibility, simplified App class that uses MainWindow
 class App(MainWindow):
     """For compatibility with existing code: redirects to MainWindow."""
 

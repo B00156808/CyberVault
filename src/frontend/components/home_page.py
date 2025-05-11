@@ -1,17 +1,16 @@
 import os
 import re
 import webbrowser
-import subprocess
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QLabel, QListWidget, QListWidgetItem, QTextEdit, QSizePolicy,
-    QMessageBox, QFrame, QGraphicsDropShadowEffect, QSpacerItem
+    QPushButton, QListWidget, QListWidgetItem,
+    QTextEdit, QFrame
 )
-from PyQt5.QtCore import Qt, QSize, QPropertyAnimation, QEasingCurve
-from PyQt5.QtGui import QColor, QFont, QIcon, QPixmap
-
-from ..utils.news_utils import get_cybersecurity_news, NewsItemWidget, get_fallback_cybersecurity_news
-
+from PyQt5.QtWidgets import QMessageBox
+from datetime import datetime
+from ..utils.news_utils import get_cybersecurity_news
+from ...config.settings import REPORTS_DIR
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSizePolicy
+from PyQt5.QtCore import Qt, QSize
 
 class HomePage(QWidget):
     """Home page of the CyberVault application."""
@@ -105,8 +104,7 @@ class HomePage(QWidget):
         self.update_reports_list()
 
     def welcome_section(self):
-        """Create a minimalist welcome and scan section with clean design."""
-
+        """Welcome and scan section."""
 
         container = QFrame()
         container.setStyleSheet("""
@@ -214,7 +212,7 @@ class HomePage(QWidget):
         # Add the container to the right layout
         self.right_layout.addWidget(container)
 
-        # subtle animation on scan button hover
+        # button hover
         def on_button_hover():
             self.scan_button.setStyleSheet("""
                 font-size: 16px;
@@ -245,9 +243,7 @@ class HomePage(QWidget):
         self.scan_button.leaveEvent = lambda e: on_button_leave()
 
     def load_news_preview(self):
-        """Load news preview with a compact design that ensures all content fits within available width."""
-        from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSizePolicy
-        from PyQt5.QtCore import Qt, QSize, QRect
+        """Load news preview."""
 
         # Clear the existing content
         self.home_news_list.clear()
@@ -266,7 +262,7 @@ class HomePage(QWidget):
 
         # Calculate available width - get the actual visible width of the list widget
         list_width = self.home_news_list.viewport().width()
-        content_width = max(150, list_width - 20)  # Account for padding and scrollbar
+        content_width = max(150, list_width - 20)
         print(f"Available width for news content: {content_width}px")
 
         # Apply a better style to the list widget with no horizontal scrollbar
@@ -303,7 +299,7 @@ class HomePage(QWidget):
         self.home_news_list.setResizeMode(QListWidget.Adjust)
         self.home_news_list.setTextElideMode(Qt.ElideRight)
 
-        # Add articles with ultra-compact styling
+        # Add articles
         for title, description, link, image_url in self.home_news_articles:
             # Create a custom widget
             article_widget = QWidget()
@@ -327,7 +323,7 @@ class HomePage(QWidget):
                 tag_text = "PRIVACY"
 
             tag_label = QLabel(tag_text)
-            tag_label.setFixedWidth(content_width - 15)  # Constrain width
+            tag_label.setFixedWidth(content_width - 15)
             tag_label.setStyleSheet("""
                 color: #0de8f2;
                 font-size: 8px;
@@ -341,7 +337,7 @@ class HomePage(QWidget):
 
             # Shorten title to fit
             short_title = title
-            if len(short_title) > 50:  # Limit title length
+            if len(short_title) > 50:
                 short_title = short_title[:47] + "..."
 
             # Add title
@@ -358,11 +354,11 @@ class HomePage(QWidget):
 
             # Very short description
             short_desc = description
-            if len(short_desc) > 40:  # Very short description
+            if len(short_desc) > 40:
                 short_desc = short_desc[:37] + "..."
 
             desc_label = QLabel(short_desc)
-            desc_label.setFixedWidth(content_width - 15)  # Constrain width
+            desc_label.setFixedWidth(content_width - 15)
             desc_label.setWordWrap(True)
             desc_label.setStyleSheet("""
                 font-size: 9px;
@@ -410,8 +406,8 @@ class HomePage(QWidget):
             # Create the list item
             item = QListWidgetItem(self.home_news_list)
 
-            # Set an appropriate fixed size that will definitely fit
-            item.setSizeHint(QSize(list_width - 10, 90))  # Very compact height
+            # Set an appropriate fixed size
+            item.setSizeHint(QSize(list_width - 10, 90))
 
             self.home_news_list.addItem(item)
             self.home_news_list.setItemWidget(item, article_widget)
@@ -438,13 +434,10 @@ class HomePage(QWidget):
 
     def get_available_reports(self, output_dir=None):
         """Get a list of all available reports with timestamps"""
-        from datetime import datetime
-        import os
-        import re
+
 
         # If no output directory is specified, use the one from settings
         if output_dir is None:
-            from ...config.settings import REPORTS_DIR
             output_dir = REPORTS_DIR
 
         print(f"Looking for reports in: {output_dir}")
@@ -491,10 +484,7 @@ class HomePage(QWidget):
 
     def scan_results_box_clicked(self, event):
         """Handle double-clicks in the scan results box"""
-        import os
-        import subprocess
-        import sys
-        from PyQt5.QtWidgets import QMessageBox
+
 
         # Get the cursor position at the click location
         cursor = self.scan_results_box.cursorForPosition(event.pos())
@@ -513,7 +503,7 @@ class HomePage(QWidget):
             # So we can estimate which report was clicked
             report_index = block_number // 4
 
-            print(f"Estimated report index: {report_index}")  # Debug info
+            print(f"Estimated report index: {report_index}")
 
             # Make sure we have reports and the index is valid
             if hasattr(self, 'available_reports') and 0 <= report_index < len(self.available_reports):
@@ -524,13 +514,7 @@ class HomePage(QWidget):
                 # Check if the file exists
                 if os.path.exists(file_path):
                     try:
-                        # Use the default system PDF viewer to open the report
-                        if sys.platform == "win32":
-                            os.startfile(file_path)
-                        elif sys.platform == "darwin":  # macOS
-                            subprocess.run(["open", file_path])
-                        else:  # Linux
-                            subprocess.run(["xdg-open", file_path])
+                        os.startfile(file_path)
                     except Exception as e:
                         print(f"Error opening file: {e}")  # Debug info
                         QMessageBox.warning(self, "Error Opening Report",
@@ -542,17 +526,9 @@ class HomePage(QWidget):
 
     def open_report_file(self, file_path):
         """Open a report file using the system's default PDF viewer."""
-        import sys
-
         if file_path and os.path.exists(file_path):
             try:
-                # Use the default system PDF viewer to open the report
-                if sys.platform == "win32":
-                    os.startfile(file_path)
-                elif sys.platform == "darwin":  # macOS
-                    subprocess.run(["open", file_path])
-                else:  # Linux
-                    subprocess.run(["xdg-open", file_path])
+                os.startfile(file_path)
             except Exception as e:
                 QMessageBox.warning(self, "Error Opening Report",
                                     f"Could not open the report:\n\n{str(e)}")
@@ -561,8 +537,7 @@ class HomePage(QWidget):
                                     "The report file could not be found.")
 
     def update_reports_list(self):
-        """Update the scan_results_box to show available reports with custom formatting"""
-        from ...config.settings import REPORTS_DIR
+        """Update the scan_results_box to show reports"""
 
         # Clear the existing content
         self.scan_results_box.clear()

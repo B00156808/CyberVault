@@ -1,12 +1,17 @@
 import os
+import sys
+import subprocess
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QLabel, QTextEdit, QProgressBar
+    QLabel, QTextEdit, QProgressBar, QMessageBox
 )
 from PyQt5.QtCore import Qt
-
 from ..utils.chart_utils import VulnerabilityPieChart
 from src.config.constants import SEVERITY_COLORS_UI
+
+# Import reports directory from settings
+from src.config.settings import REPORTS_DIR
+
 
 
 class ScanResultsPage(QWidget):
@@ -162,13 +167,6 @@ class ScanResultsPage(QWidget):
 
     def open_pdf_report(self):
         """Open the PDF report if it exists."""
-        import os
-        import sys
-        import subprocess
-        from PyQt5.QtWidgets import QMessageBox
-
-        # Import reports directory from settings
-        from src.config.settings import REPORTS_DIR
 
         if not hasattr(self, 'pdf_report_path') or not self.pdf_report_path:
             # Try to find the most recent report
